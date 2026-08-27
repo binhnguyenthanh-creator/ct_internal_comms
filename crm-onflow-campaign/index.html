@@ -174,6 +174,31 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     <div class="chart-holder" id="c_vtrend"></div>
   </div>
 
+  <div class="section-h">Funnel theo cohort <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)" id="funnel-scope"></span></div>
+  <p class="section-sub" id="funnel-sub">Từng bước một cho scope đang chọn: chỗ nào rớt mạnh nhất là chỗ cần optimize. Bảng bên dưới xếp hạng từng cohort theo bước yếu nhất.</p>
+  <div class="controls" style="margin-bottom:12px">
+    <div class="ctl"><span class="ctl-label">Cohort</span>
+      <div class="seg" id="cohortSeg">
+        <button data-c="campaign" type="button" aria-pressed="true">Campaign</button>
+        <button data-c="vertical" type="button">Vertical</button>
+        <button data-c="side" type="button">Side</button>
+        <button data-c="source" type="button">Source</button>
+      </div>
+    </div>
+    <div class="range-note" id="funnel-note"></div>
+  </div>
+  <div class="grid g-2">
+    <div class="panel">
+      <div class="p-head"><div><div class="p-title">Funnel &mdash; <span id="funnel-scope-name"></span></div><div class="p-desc" id="funnel-desc"></div></div></div>
+      <div id="c_funnel"></div>
+    </div>
+    <div class="panel">
+      <div class="p-head"><div><div class="p-title">Đọc nhanh</div><div class="p-desc">Bước rớt mạnh nhất &amp; phần đầu phễu còn thiếu dữ liệu.</div></div></div>
+      <div id="funnel-read"></div>
+    </div>
+  </div>
+  <div class="tbl-wrap" style="margin-top:16px"><table id="funnelTbl"><thead></thead><tbody></tbody></table></div>
+
   <div class="section-h">Campaign contribution to the change <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&mdash; window vs previous equal window</span></div>
   <p class="section-sub" id="contrib-sub"></p>
   <div class="grid g-2">
@@ -230,7 +255,7 @@ const MET={
 };
 const MET_ORDER=["leads","dau","dau_w_lead","dau_w_save_ad","save_ad","dau_w_adview","dau_w_listing","adview_sum","listing_sum"];
 
-let state={range:"7",metric:"leads",vert:"all",side:"all",source:"all",reg:"reg",search:"",
+let state={range:"7",metric:"leads",vert:"all",side:"all",source:"all",reg:"reg",search:"",funnelCohort:"campaign",
   cStart:DATES[Math.max(0,DATES.length-7)],cEnd:DATES[DATES.length-1]};
 const inConfig=ci=>!!(CAMPS[ci][6]||"").trim();  // registered in raw__onflow__campaigns (created_by present)
 
@@ -386,6 +411,90 @@ function renderVertTrend(){
   holder.appendChild(svg);
 }
 
+// ----- funnel by cohort -----
+// Reachable stages (distinct users, Σ over window). Sent/Delivered/Open need the comms
+// platform send-log (Onflow/Braze) which isn't in the accessible warehouse → shown as n/a.
+function stageSums(ok){const set=new Set(windowIdx().cur);const s={reached:0,viewed:0,saved:0,lead:0};
+  for(const row of D){ if(!set.has(row[0])||!ok(row[1]))continue; s.reached+=row[2];s.viewed+=row[3];s.lead+=row[8];s.saved+=row[10]; }
+  return s;}
+function campOkForCohort(ci,dim){const c=CAMPS[ci];
+  if(state.reg==="reg"&&!inConfig(ci))return false;
+  if(dim!=="vertical"&&state.vert!=="all"&&c[1]!==state.vert)return false;
+  if(dim!=="side"&&state.side!=="all"&&c[2]!==state.side)return false;
+  if(dim!=="source"&&state.source!=="all"&&c[4]!==state.source)return false;
+  if(state.search&&!c[0].toLowerCase().includes(state.search.toLowerCase()))return false;
+  return true;}
+function renderFunnel(){
+  const s=stageSums(campOk),reached=s.reached||0;
+  const scopeName=`${state.vert==="all"?"tất cả vertical":state.vert}${state.side!=="all"?" · "+state.side:""}${state.source!=="all"?" · "+state.source:""}${state.reg==="reg"?" · registered":""}`;
+  $("#funnel-scope-name").textContent=scopeName;
+  $("#funnel-scope").textContent=`— ${daysLabel(windowIdx().cur)} · distinct users`;
+  $("#funnel-desc").innerHTML=`Distinct users mỗi bước (Σ trong cửa sổ). Phễu bắt đầu ở <b>Click</b> vì Sent/Delivered/Open nằm ở nền tảng comms.`;
+  const box=$("#c_funnel");box.innerHTML="";
+  // greyed upper-funnel (no data)
+  ["Sent","Delivered","Open / Impression"].forEach(lab=>{
+    box.insertAdjacentHTML("beforeend",
+      `<div style="margin:0 0 9px;opacity:.5">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:var(--ink-2);font-weight:600">${lab}</span>
+          <span class="mono" style="color:var(--muted)">n/a · cần send-log</span></div>
+        <div style="height:20px;border:1px dashed var(--hair-strong);border-radius:6px;background:repeating-linear-gradient(45deg,transparent,transparent 5px,var(--plane) 5px,var(--plane) 10px)"></div>
+      </div>`);});
+  const defs=[
+    {label:"Click / Reached",c:s.reached,base:null,bl:""},
+    {label:"Viewed ad (impression)",c:s.viewed,base:s.reached,bl:"click"},
+    {label:"Lead / contact",c:s.lead,base:s.viewed,bl:"view"},
+    {label:"Saved ad",c:s.saved,base:s.viewed,bl:"view"}
+  ];
+  // worst drop along the PRIMARY path (Click→View→Lead); Save is a secondary outcome, not a candidate
+  let worst={drop:-1};
+  defs.forEach(d=>{if(d.base!=null&&d.label!=="Saved ad"){const conv=d.base?d.c/d.base:0,drop=1-conv;if(drop>worst.drop)worst={drop,label:d.label,bl:d.bl,conv};}});
+  defs.forEach(d=>{const w=reached?Math.max(1.5,d.c/reached*100):0;const conv=d.base!=null?(d.base?d.c/d.base:0):1;
+    const isWorst=d.base!=null&&d.label!=="Saved ad"&&Math.abs((1-conv)-worst.drop)<1e-9;
+    const color=d.base==null?"var(--accent)":(isWorst?"var(--bad)":"var(--accent)");
+    const convTxt=d.base==null?`<span style="color:var(--muted)">100%</span>`
+      :`<span style="color:${isWorst?'var(--bad-ink)':'var(--ink-2)'};font-weight:600">${pct(conv,1)}</span> <span style="color:var(--muted)">of ${d.bl}</span>`;
+    box.insertAdjacentHTML("beforeend",
+      `<div style="margin:0 0 9px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:var(--ink);font-weight:600">${d.label}${isWorst?' <span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">rớt mạnh nhất</span>':''}</span>
+          <span class="mono" style="color:var(--ink);font-weight:600">${fmt(d.c)} · ${convTxt}</span></div>
+        <div style="height:22px;background:var(--plane);border-radius:6px;overflow:hidden"><div style="height:100%;width:${w.toFixed(1)}%;background:${color};border-radius:6px"></div></div>
+      </div>`);});
+  const readBox=$("#funnel-read");
+  const wpct=worst.drop>=0?pct(worst.drop,0):"—";
+  readBox.innerHTML=
+    `<div style="background:color-mix(in srgb,var(--bad) 9%,transparent);border:1px solid color-mix(in srgb,var(--bad) 30%,transparent);border-radius:10px;padding:11px 13px;margin-bottom:12px">
+       <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--bad-ink);font-weight:700;margin-bottom:4px">Rớt mạnh nhất</div>
+       <div style="font-size:13px;color:var(--ink)"><b>${worst.label||"—"}</b> — chỉ <b>${worst.conv!=null?pct(worst.conv,1):"—"}</b> đi tiếp từ <b>${worst.bl||"—"}</b> (mất <b>${wpct}</b>). Đây là bước nên optimize trước.</div>
+     </div>
+     <div style="font-size:12px;color:var(--ink-2);line-height:1.6">
+       <b>Phần đầu phễu chưa có:</b> <span class="chtag">Sent</span> <span class="chtag">Delivered</span> <span class="chtag">Open/Impression</span> nằm trong send-log của Onflow/Braze — không có trong các bảng traffic mình truy cập được (chỉ bắt được từ <b>Click</b> trở đi). Nếu bạn chỉ mình dataset/bảng send-log, mình nối thêm 3 bước trên để có CTR = Click/Delivered, open-rate…
+     </div>`;
+  $("#funnel-note").innerHTML=`<b>${daysLabel(windowIdx().cur)}</b> · distinct users, Σ trong cửa sổ · tỷ lệ = conversion mỗi bước`;
+}
+function renderFunnelTable(){
+  const dim=state.funnelCohort,cur=new Set(windowIdx().cur),g=new Map();
+  for(const row of D){ if(!cur.has(row[0]))continue; const ci=row[1]; if(!campOkForCohort(ci,dim))continue;
+    const key=dim==="campaign"?ci:CAMPS[ci][dim==="vertical"?1:dim==="side"?2:4];
+    const o=g.get(key)||{reached:0,viewed:0,saved:0,lead:0};o.reached+=row[2];o.viewed+=row[3];o.lead+=row[8];o.saved+=row[10];g.set(key,o);}
+  let list=[...g.entries()].map(([k,o])=>({name:dim==="campaign"?CAMPS[k][0]:(k||"—"),reached:o.reached,viewed:o.viewed,saved:o.saved,lead:o.lead,
+    c1:o.reached?o.viewed/o.reached:0,cLead:o.viewed?o.lead/o.viewed:0,cSave:o.viewed?o.saved/o.viewed:0}))
+    .filter(x=>x.reached>0).sort((a,b)=>b.reached-a.reached).slice(0,20);
+  const thead=$("#funnelTbl thead"),tb=$("#funnelTbl tbody");
+  const dimLab={campaign:"Campaign",vertical:"Vertical",side:"Side",source:"Source"}[dim];
+  thead.innerHTML=`<tr><th>${dimLab}</th><th>Reached</th><th>Viewed</th><th>Click&rarr;View</th><th>Lead</th><th>View&rarr;Lead</th><th>Saved</th><th>View&rarr;Save</th><th>Bước yếu nhất</th></tr>`;
+  tb.innerHTML="";
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:16px">Không có cohort trong scope.</td></tr>';return;}
+  list.forEach(x=>{const drop1=1-x.c1,dropL=x.viewed?1-x.cLead:1;const worstView=drop1>=dropL;
+    const weak=worstView?"Click→View":"View→Lead";
+    const c1s=`<td class="num" style="${worstView?'color:var(--bad-ink);font-weight:700':''}">${pct(x.c1,1)}</td>`;
+    const cLs=`<td class="num" style="${!worstView?'color:var(--bad-ink);font-weight:700':''}">${x.viewed?pct(x.cLead,1):'—'}</td>`;
+    const tr=el("tr");
+    tr.innerHTML=`<td title="${x.name}">${x.name}</td><td class="num">${fmt(x.reached)}</td><td class="num">${fmt(x.viewed)}</td>${c1s}<td class="num">${fmt(x.lead)}</td>${cLs}<td class="num">${fmt(x.saved)}</td><td class="num" style="color:var(--muted)">${x.viewed?pct(x.cSave,1):'—'}</td><td style="text-align:left"><span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">${weak}</span></td>`;
+    tb.appendChild(tr);});
+}
+
 // ----- contribution -----
 function renderContrib(){
   const {cur,prev}=windowIdx();const met=MET[state.metric];
@@ -496,13 +605,16 @@ function segWire(id,attr,key,extra){$(id).addEventListener("click",e=>{const bt=
   [...$(id).children].forEach(x=>x.setAttribute("aria-pressed","false"));bt.setAttribute("aria-pressed","true");state[key]=bt.getAttribute(attr);if(extra)extra(bt.getAttribute(attr));renderAll();});}
 segWire("#rangeSeg","data-r","range",r=>{$("#customRange").classList.toggle("on",r==="custom");});
 segWire("#vertSeg","data-v","vert");segWire("#sideSeg","data-s","side");segWire("#regSeg","data-g","reg");
-let st;$("#searchBox").addEventListener("input",e=>{state.search=e.target.value;clearTimeout(st);st=setTimeout(()=>{renderContrib();renderTable();renderTrend();renderVertTrend();renderKPIs();renderSplits();},180);});
+$("#cohortSeg").addEventListener("click",e=>{const bt=e.target.closest("button");if(!bt)return;
+  [...$("#cohortSeg").children].forEach(x=>x.setAttribute("aria-pressed","false"));bt.setAttribute("aria-pressed","true");
+  state.funnelCohort=bt.getAttribute("data-c");renderFunnelTable();});
+let st;$("#searchBox").addEventListener("input",e=>{state.search=e.target.value;clearTimeout(st);st=setTimeout(()=>{renderContrib();renderTable();renderTrend();renderVertTrend();renderFunnel();renderFunnelTable();renderKPIs();renderSplits();},180);});
 const root=document.documentElement;
 function curDark(){const t=root.getAttribute("data-theme");if(t)return t==="dark";return mm("(prefers-color-scheme:dark)").matches;}
 $("#themeBtn").addEventListener("click",()=>{const d=!curDark();root.setAttribute("data-theme",d?"dark":"light");$("#themeIco").textContent=d?"\u263e":"\u2600";renderAll();});
 mm("(prefers-color-scheme:dark)").addEventListener("change",()=>{if(!root.getAttribute("data-theme"))renderAll();});
 function renderSplits(){renderSplit("#c_side",2,k=>SIDE_COLOR[k]||"var(--s-other)");renderSplit("#c_source",4,k=>k==="onflow"?"var(--accent)":"var(--s-other)");}
-function renderAll(){renderKPIs();renderTrend();renderVertTrend();renderContrib();renderSplits();renderTable();}
+function renderAll(){renderKPIs();renderTrend();renderVertTrend();renderFunnel();renderFunnelTable();renderContrib();renderSplits();renderTable();}
 fillSelects();setupCustom();renderFoot();renderAll();
 let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{renderTrend();renderVertTrend();},150);});
 })();
