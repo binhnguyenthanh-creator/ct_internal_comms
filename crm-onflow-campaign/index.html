@@ -185,6 +185,11 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
         <button data-c="source" type="button">Source</button>
       </div>
     </div>
+    <div class="ctl"><span class="ctl-label">Campaign</span>
+      <input type="text" class="search" id="funnelCampInput" list="funnelCampList" placeholder="lọc campaign_name&hellip;" style="min-width:250px">
+      <datalist id="funnelCampList"></datalist>
+      <button type="button" id="funnelCampClear" class="chtag" style="cursor:pointer;display:none;background:var(--plane)">&times; bỏ lọc</button>
+    </div>
     <div class="range-note" id="funnel-note"></div>
   </div>
   <div class="grid g-2">
@@ -255,7 +260,7 @@ const MET={
 };
 const MET_ORDER=["leads","dau","dau_w_lead","dau_w_save_ad","save_ad","dau_w_adview","dau_w_listing","adview_sum","listing_sum"];
 
-let state={range:"7",metric:"leads",vert:"all",side:"all",source:"all",reg:"reg",search:"",funnelCohort:"campaign",
+let state={range:"7",metric:"leads",vert:"all",side:"all",source:"all",reg:"reg",search:"",funnelCohort:"campaign",funnelCamp:"",
   cStart:DATES[Math.max(0,DATES.length-7)],cEnd:DATES[DATES.length-1]};
 const inConfig=ci=>!!(CAMPS[ci][6]||"").trim();  // registered in raw__onflow__campaigns (created_by present)
 
@@ -427,15 +432,17 @@ function campOkForCohort(ci,dim){const c=CAMPS[ci];
   if(dim!=="source"&&state.source!=="all"&&c[4]!==state.source)return false;
   if(state.search&&!c[0].toLowerCase().includes(state.search.toLowerCase()))return false;
   return true;}
+// funnel-only campaign filter (substring match on campaign_name)
+function fCampOk(ci){ if(!state.funnelCamp)return true; return CAMPS[ci][0].toLowerCase().includes(state.funnelCamp.toLowerCase()); }
 function renderFunnel(){
   const win=windowIdx().cur, winSet=new Set(win);
   // send-cohort = campaigns in scope that actually have Onflow send-log in the window
   const sendCamp=new Set();
-  for(const row of D){ if(!winSet.has(row[0])||!campOk(row[1]))continue; if(row[11]>0)sendCamp.add(row[1]); }
+  for(const row of D){ if(!winSet.has(row[0])||!campOk(row[1])||!fCampOk(row[1]))continue; if(row[11]>0)sendCamp.add(row[1]); }
   const hasSend=sendCamp.size>0;
-  const ok=hasSend?(ci=>campOk(ci)&&sendCamp.has(ci)):campOk;
+  const ok=hasSend?(ci=>campOk(ci)&&fCampOk(ci)&&sendCamp.has(ci)):(ci=>campOk(ci)&&fCampOk(ci));
   const s=stageSums(ok);
-  const scopeName=`${state.vert==="all"?"tất cả vertical":state.vert}${state.side!=="all"?" · "+state.side:""}${state.source!=="all"?" · "+state.source:""}${state.reg==="reg"?" · registered":""}`;
+  const scopeName=`${state.funnelCamp?'campaign ~ "'+state.funnelCamp+'"':(state.vert==="all"?"tất cả vertical":state.vert)+(state.side!=="all"?" · "+state.side:"")+(state.source!=="all"?" · "+state.source:"")+(state.reg==="reg"?" · registered":"")}`;
   $("#funnel-scope-name").textContent=scopeName;
   $("#funnel-scope").textContent=`— ${daysLabel(win)}`;
   $("#funnel-desc").innerHTML=hasSend
@@ -490,7 +497,7 @@ function renderFunnel(){
 }
 function renderFunnelTable(){
   const dim=state.funnelCohort,cur=new Set(windowIdx().cur),g=new Map();
-  for(const row of D){ if(!cur.has(row[0]))continue; const ci=row[1]; if(!campOkForCohort(ci,dim))continue;
+  for(const row of D){ if(!cur.has(row[0]))continue; const ci=row[1]; if(!campOkForCohort(ci,dim)||!fCampOk(ci))continue;
     const key=dim==="campaign"?ci:CAMPS[ci][dim==="vertical"?1:dim==="side"?2:4];
     const o=g.get(key)||{sent:0,reach:0,opens:0,reached:0,viewed:0,saved:0,lead:0};
     o.reached+=row[2];o.viewed+=row[3];o.lead+=row[8];o.saved+=row[10];
@@ -511,12 +518,14 @@ function renderFunnelTable(){
   const P=v=>v==null?'<span style="color:var(--muted)">—</span>':pct(v,1);
   list.forEach(x=>{const cell=(v,name)=>`<td class="num" style="${x.weak&&x.weak[0]===name?'color:var(--bad-ink);font-weight:700':''}">${P(v)}</td>`;
     const tr=el("tr");
-    tr.innerHTML=`<td title="${x.name}">${x.name}</td>`
+    tr.innerHTML=`<td title="${x.name}">${dim==="campaign"?'<span style="text-decoration:underline dotted;text-underline-offset:2px">'+x.name+'</span>':x.name}</td>`
       +`<td class="num">${x.sent?fmt(x.sent):'<span style="color:var(--muted)">—</span>'}</td>`
       +cell(x.cDel,"Reach/Sent")+cell(x.cCtr,"Open/Reach")
       +`<td class="num">${fmt(x.reached)}</td>`
       +cell(x.cView,"View/Landed")+cell(x.cLead,"Lead/View")
       +`<td style="text-align:left">${x.weak?`<span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">${x.weak[0]}</span>`:'—'}</td>`;
+    if(dim==="campaign"){tr.style.cursor="pointer";tr.title="Click để xem funnel của campaign này";
+      tr.addEventListener("click",()=>{state.funnelCamp=x.name;const inp=$("#funnelCampInput");if(inp)inp.value=x.name;$("#funnelCampClear").style.display="";renderFunnel();renderFunnelTable();});}
     tb.appendChild(tr);});
 }
 
@@ -620,6 +629,13 @@ function fillSelects(){
   $("#sourceSel").innerHTML=srcs.map(s=>`<option value="${s}"${s===state.source?" selected":""}>${s==="all"?"All sources":s}</option>`).join("");
   $("#metricSel").addEventListener("change",e=>{state.metric=e.target.value;renderAll();});
   $("#sourceSel").addEventListener("change",e=>{state.source=e.target.value;renderAll();});
+  // funnel campaign filter: autocomplete list of all campaign names
+  $("#funnelCampList").innerHTML=[...CAMPS].map(c=>c[0]).sort((a,b)=>a.localeCompare(b))
+    .map(n=>`<option value="${n.replace(/"/g,"&quot;")}"></option>`).join("");
+  const fc=$("#funnelCampInput"),fcClear=$("#funnelCampClear");
+  let ft;fc.addEventListener("input",e=>{const v=e.target.value.trim();clearTimeout(ft);
+    ft=setTimeout(()=>{state.funnelCamp=v;fcClear.style.display=v?"":"none";renderFunnel();renderFunnelTable();},180);});
+  fcClear.addEventListener("click",()=>{state.funnelCamp="";fc.value="";fcClear.style.display="none";renderFunnel();renderFunnelTable();});
 }
 function setupCustom(){const a=$("#cStart"),b=$("#cEnd");a.min=b.min=DATES[0];a.max=b.max=DATES[DATES.length-1];a.value=state.cStart;b.value=state.cEnd;
   const upd=()=>{if(a.value&&b.value&&a.value<=b.value){state.cStart=a.value;state.cEnd=b.value;state.range="custom";
