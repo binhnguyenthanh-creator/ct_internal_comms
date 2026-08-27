@@ -246,14 +246,23 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
     </div>
   </div>
 
-  <div class="section-h">Leads breakdown <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&#8212; additive across the grain</span></div>
+  <div class="section-h">Breakdown by vertical &amp; platform <span id="bk-subh" style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)"></span></div>
+  <div class="bk-controls">
+    <div class="ctl"><span class="ctl-label">Metric</span>
+      <div class="seg" id="bkSeg">
+        <button data-m="leads" type="button" aria-pressed="true">Leads</button>
+        <button data-m="au" type="button">Active users</button>
+        <button data-m="awl" type="button">Users w/ lead</button>
+      </div>
+    </div>
+  </div>
   <div class="grid g-2b">
     <div class="panel">
-      <div class="p-head"><div><div class="p-title">Leads by vertical</div><div class="p-desc" id="lv-desc"></div></div><div class="legend" id="lv-legend"></div></div>
+      <div class="p-head"><div><div class="p-title" id="lv-title">Leads by vertical</div><div class="p-desc" id="lv-desc"></div></div><div class="legend" id="lv-legend"></div></div>
       <div class="chart-holder" id="c_lvert"></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title">Leads by platform</div><div class="p-desc" id="lp-desc"></div></div><div class="legend" id="lp-legend"></div></div>
+      <div class="p-head"><div><div class="p-title" id="lp-title">Leads by platform</div><div class="p-desc" id="lp-desc"></div></div><div class="legend" id="lp-legend"></div></div>
       <div class="chart-holder" id="c_lplat"></div>
     </div>
   </div>
@@ -330,7 +339,7 @@ const fmtDateY=s=>parseD(s).toLocaleDateString("en-GB",{day:"numeric",month:"sho
 const ymLabel=ym=>{const[y,m]=ym.split("-");return new Date(Date.UTC(+y,+m-1,1)).toLocaleDateString("en-GB",{month:"short",year:"2-digit",timeZone:"UTC"});};
 const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-let state={plat:"all",vert:"all",range:"90",ts:"leads",mtx:"mau",month:MONTHS[MONTHS.length-1],drillP:1,drillV:0,
+let state={plat:"all",vert:"all",range:"90",ts:"leads",bk:"leads",mtx:"mau",month:MONTHS[MONTHS.length-1],drillP:1,drillV:0,
   cStart:iso(new Date(maxDate.getTime()-29*864e5)),cEnd:iso(maxDate)};
 
 // ---- window ----
@@ -578,32 +587,52 @@ function renderTrend(){
     {n,xlabel:label,xtip:tip,xlabels:4,height:250,pctAxis:true,maxV:niceMax(Math.max(0.001,...shareVals)*1.15)});
 }
 
-// ---- leads breakdown (adaptive daily-area / monthly-bars) ----
+// ---- breakdown (adaptive daily-area / monthly-bars, selectable metric) ----
+// daily field / monthly field per metric. DLY:[di,pi,vi,dau,new,ret,dwl,leads,..]  MON:[mi,pi,vi,mau,mau_wl,lead_mth,..]
+const BKMETA={
+  leads:{lab:"Leads",dLab:"Leads",mLab:"Leads",dF:r=>r[7],mF:r=>r[5],add:true},
+  au:{lab:"Active users",dLab:"DAU",mLab:"MAU",dF:r=>r[3],mF:r=>r[3],add:false},
+  awl:{lab:"Users w/ lead",dLab:"DAU w/ lead",mLab:"MAU w/ lead",dF:r=>r[6],mF:r=>r[4],add:false}
+};
 function monthsInWindow(){const s=rangeStart(),e=rangeEnd(),set=new Set();DATES.forEach((d,i)=>{const t=parseD(d);if(t>=s&&t<=e)set.add(d.slice(0,7));});return[...set].sort();}
 function breakdownRows(dim){ // returns {rows, mode}
-  const keys=dim==="vert"?VERT:PLAT,otherIdx=dim==="vert"?pIdx():vIdx();
+  const m=BKMETA[state.bk],keys=dim==="vert"?VERT:PLAT,otherIdx=dim==="vert"?pIdx():vIdx();
   const days=windowDaysCount();
   if(days<=45){ // daily stacked area
     const cur=selDaily();const byDate=new Map();
     cur.forEach(r=>{const keyIdx=dim==="vert"?r[2]:r[1],filt=dim==="vert"?r[1]:r[2];if(otherIdx>=0&&filt!==otherIdx)return;
-      const o=byDate.get(r[0])||{di:r[0]};o[keyIdx]=(o[keyIdx]||0)+r[7];byDate.set(r[0],o);});
+      const o=byDate.get(r[0])||{di:r[0]};o[keyIdx]=(o[keyIdx]||0)+m.dF(r);byDate.set(r[0],o);});
     const rows=[...byDate.values()].sort((a,b)=>a.di-b.di).map(o=>{keys.forEach((k,ki)=>o[ki]=o[ki]||0);o.lab=fmtDate(DATES[o.di]);o.full=fmtDateY(DATES[o.di]);return o;});
     return{rows,mode:"area"};
   }
   const months=monthsInWindow();
   const rows=months.map(ym=>{const mi=MONTHS.indexOf(ym),o={lab:ymLabel(ym),full:ymLabel(ym)};keys.forEach((k,ki)=>o[ki]=0);
-    MON.forEach(r=>{if(r[0]!==mi)return;const keyIdx=dim==="vert"?r[2]:r[1],filt=dim==="vert"?r[1]:r[2];if(otherIdx>=0&&filt!==otherIdx)return;o[keyIdx]+=r[5];});return o;});
+    MON.forEach(r=>{if(r[0]!==mi)return;const keyIdx=dim==="vert"?r[2]:r[1],filt=dim==="vert"?r[1]:r[2];if(otherIdx>=0&&filt!==otherIdx)return;o[keyIdx]+=m.mF(r);});return o;});
   return{rows,mode:"bar"};
 }
+function breakdownDesc(mode,dim){
+  const m=BKMETA[state.bk];
+  const base=mode==="area"?`Daily stacked (${m.dLab}, window \u2264 45 days).`:`Monthly stacked (${m.mLab}).`;
+  if(m.add)return base+' <span class="tag-add sum" style="vertical-align:middle">\u03a3 add</span>';
+  const otherSingle=dim==="vert"?(pIdx()>=0):(vIdx()>=0);
+  return base+(otherSingle?' <span class="tag-add exact" style="vertical-align:middle">exact</span>'
+    :` <span class="tag-add warn" style="vertical-align:middle">\u03a3 not de-dup</span> summed across ${dim==="vert"?"platform":"vertical"}`);
+}
 function renderBreakdowns(){
+  const m=BKMETA[state.bk];
   const lv=breakdownRows("vert");
+  const mode=lv.mode,modeLab=mode==="area"?m.dLab:m.mLab;
   $("#lv-legend").innerHTML=VERT.map((k,i)=>`<span class="item"><span class="sw sw${i+1}"></span>${VLABEL[k]}</span>`).join("");
-  $("#lv-desc").textContent=lv.mode==="area"?"Daily stacked (window \u2264 45 days).":"Monthly stacked totals.";
-  stackedChart("c_lvert",lv.rows,VERT,k=>VLABEL[k],{area:lv.mode==="area"});
+  $("#lv-title").textContent=modeLab+" by vertical";
+  $("#lv-desc").innerHTML=breakdownDesc(mode,"vert");
+  stackedChart("c_lvert",lv.rows,VERT,k=>VLABEL[k],{area:mode==="area"});
   const lp=breakdownRows("plat");
   $("#lp-legend").innerHTML=PLAT.map((k,i)=>`<span class="item"><span class="sw sw${i+1}"></span>${k}</span>`).join("");
-  $("#lp-desc").textContent=lp.mode==="area"?"Daily stacked (window \u2264 45 days).":"Monthly stacked totals.";
+  $("#lp-title").textContent=modeLab+" by platform";
+  $("#lp-desc").innerHTML=breakdownDesc(lp.mode,"plat");
   stackedChart("c_lplat",lp.rows,PLAT,k=>k,{area:lp.mode==="area"});
+  $("#bk-subh").innerHTML=m.add?"\u2014 additive across the grain"
+    :"\u2014 distinct users; each segment sums across the other dimension unless it's filtered to one";
 }
 
 // ---- patterns ----
@@ -730,6 +759,7 @@ segWire("#platSeg","data-v","plat",()=>renderScopeDeps());
 segWire("#vertSeg","data-v","vert",()=>renderScopeDeps());
 segWire("#rangeSeg","data-r","range",r=>{$("#customRange").classList.toggle("on",r==="custom");renderAll();});
 segWire("#tsSeg","data-m","ts",()=>renderTrend());
+segWire("#bkSeg","data-m","bk",()=>renderBreakdowns());
 segWire("#mtxSeg","data-m","mtx",()=>renderMatrix());
 function renderScopeDeps(){renderKPIs();renderStrip();renderByVertical();renderTrend();renderBreakdowns();renderPatterns();renderMatrix();renderDrill();renderTable();rangeLabel();}
 
