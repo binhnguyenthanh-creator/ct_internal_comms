@@ -165,6 +165,15 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
   <div class="section-h">Daily trend <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)" id="trend-scope"></span></div>
   <div class="panel"><div class="chart-holder" id="c_trend"></div></div>
 
+  <div class="section-h">Xu hướng theo vertical <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)" id="vtrend-scope"></span></div>
+  <div class="panel">
+    <div class="p-head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+      <div><div class="p-title" id="vtrend-title"></div><div class="p-desc" id="vtrend-desc"></div></div>
+      <div id="vtrend-legend" style="display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;font-size:12px"></div>
+    </div>
+    <div class="chart-holder" id="c_vtrend"></div>
+  </div>
+
   <div class="section-h">Campaign contribution to the change <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&mdash; window vs previous equal window</span></div>
   <p class="section-sub" id="contrib-sub"></p>
   <div class="grid g-2">
@@ -322,6 +331,61 @@ function renderTrend(){
   holder.appendChild(svg);
 }
 
+// ----- vertical trend (one line per vertical; read tăng/giảm by metric) -----
+const VERT_ORDER=["gds","veh","pty","jobs","other"];
+const VERT_COLOR={gds:"#2a78d6",veh:"#eb6834",pty:"#1baf7a",jobs:"#eda100",other:"#8a94a0"};
+// same filters as campOk but WITHOUT the vertical filter (this view splits BY vertical)
+function campOkNoVert(ci){const c=CAMPS[ci];
+  if(state.reg==="reg"&&!inConfig(ci))return false;
+  if(state.side!=="all"&&c[2]!==state.side)return false;
+  if(state.source!=="all"&&c[4]!==state.source)return false;
+  if(state.search&&!c[0].toLowerCase().includes(state.search.toLowerCase()))return false;
+  return true;}
+function renderVertTrend(){
+  const met=MET[state.metric], n=DATES.length;
+  const series={};VERT_ORDER.forEach(v=>series[v]=new Array(n).fill(0));
+  for(const row of D){ if(!campOkNoVert(row[1]))continue; const v=CAMPS[row[1]][1];
+    if(!series[v])series[v]=new Array(n).fill(0); series[v][row[0]]+=row[met.col]; }
+  const present=VERT_ORDER.filter(v=>series[v]&&series[v].some(x=>x>0));
+  const {cur,prev}=windowIdx();const inWin=new Set(cur),nd=cur.length||1,ndp=prev.length||1;
+  const prevFull=prev.length===cur.length&&prev.length>0;
+  const wv=(v,idx,dn)=>{let s=0;for(const i of idx)s+=series[v][i];return met.add?s:s/(dn||1);};
+  $("#vtrend-scope").textContent=`— ${met.label}, daily per vertical`;
+  $("#vtrend-title").textContent=`${met.label} theo vertical`;
+  $("#vtrend-desc").innerHTML=`Mỗi đường = 1 vertical · daily${met.add?" (Σ)":" (distinct → tổng/ngày, đọc theo xu hướng)"} · cửa sổ hiện tại được tô nền. Legend hiện Δ window vs window trước. Không chịu bộ lọc Vertical ở trên.`;
+  const lg=$("#vtrend-legend");
+  lg.innerHTML=present.map(v=>{const now=wv(v,cur,nd),was=wv(v,prev,ndp),d=now-was,r=was?d/was:0;
+    const dt=prevFull?`<span style="color:${d>=0?'var(--good-ink)':'var(--bad-ink)'};font-weight:600">${d>=0?'▲':'▼'} ${was?pct(Math.abs(r),0):'new'}</span>`:'';
+    return `<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:12px;height:3px;border-radius:2px;background:${VERT_COLOR[v]}"></span><b style="color:var(--ink-2)">${v}</b> ${dt}</span>`;}).join("");
+  const holder=$("#c_vtrend");holder.innerHTML="";holder.style.position="relative";
+  const W=holder.clientWidth||900,H=240,m={t:12,r:14,b:24,l:46},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  let maxV=1;present.forEach(v=>series[v].forEach(x=>{if(x>maxV)maxV=x;}));maxV*=1.08;
+  const X=i=>n<=1?m.l+iw/2:m.l+i*iw/(n-1),Y=val=>m.t+ih-(val/maxV)*ih;
+  const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`,width:"100%",height:H});svg.style.display="block";svg.style.overflow="visible";
+  for(let i=0;i<=4;i++){const y=Y(maxV*i/4);svg.appendChild(svgEl("line",{class:"grid-line",x1:m.l,x2:m.l+iw,y1:y.toFixed(1),y2:y.toFixed(1),"stroke-width":1}));
+    const tx=svgEl("text",{x:m.l-8,y:(y+3.5).toFixed(1),"text-anchor":"end"});tx.textContent=compact(maxV*i/4);svg.appendChild(tx);}
+  if(inWin.size){const xs=[...inWin].sort((a,b)=>a-b),x0=X(xs[0])-2,x1=X(xs[xs.length-1])+2;
+    svg.appendChild(svgEl("rect",{x:x0.toFixed(1),y:m.t,width:(x1-x0).toFixed(1),height:ih,fill:"var(--accent)","fill-opacity":".06"}));}
+  const stepL=Math.max(1,Math.floor(n/8));
+  for(let i=0;i<n;i+=stepL){const tx=svgEl("text",{x:X(i).toFixed(1),y:H-8,"text-anchor":"middle"});tx.textContent=fmtDate(DATES[i]);svg.appendChild(tx);}
+  present.forEach(v=>{const pts=series[v].map((val,i)=>[X(i),Y(val)]);
+    const lp="M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L ");
+    const le=svgEl("path",{d:lp,fill:"none"});le.style.stroke=VERT_COLOR[v];le.style.strokeWidth=2;le.style.strokeLinejoin="round";le.style.strokeLinecap="round";svg.appendChild(le);});
+  const dots=present.map(v=>{const c=svgEl("circle",{r:3,fill:"var(--surface)","stroke-width":2});c.style.stroke=VERT_COLOR[v];c.style.opacity="0";svg.appendChild(c);return c;});
+  const focus=svgEl("line",{y1:m.t,y2:m.t+ih,stroke:"var(--hair-strong)","stroke-width":1});focus.style.opacity="0";svg.appendChild(focus);
+  const tip=el("div","tt");holder.appendChild(tip);
+  const ov=svgEl("rect",{x:m.l,y:m.t,width:iw,height:ih,fill:"transparent"});ov.style.cursor="crosshair";svg.appendChild(ov);
+  ov.addEventListener("mousemove",ev=>{const rect=svg.getBoundingClientRect();const px=(ev.clientX-rect.left)*(W/rect.width);
+    let i=Math.round((px-m.l)/(iw/((n-1)||1)));i=Math.max(0,Math.min(n-1,i));const xx=X(i);
+    focus.setAttribute("x1",xx);focus.setAttribute("x2",xx);focus.style.opacity="1";
+    let rows="";present.forEach((v,k)=>{dots[k].setAttribute("cx",xx);dots[k].setAttribute("cy",Y(series[v][i]));dots[k].style.opacity="1";
+      rows+=`<div style="display:flex;justify-content:space-between;gap:12px"><span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:2px;background:${VERT_COLOR[v]}"></span>${v}</span><b>${fmt(series[v][i])}</b></div>`;});
+    tip.innerHTML=`<div class="d">${parseD(DATES[i]).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</div>${rows}`;tip.style.opacity="1";
+    let tx=(xx/W)*rect.width+12;if(tx>rect.width-160)tx=(xx/W)*rect.width-tip.offsetWidth-12;tip.style.left=Math.max(4,tx)+"px";tip.style.top="4px";});
+  ov.addEventListener("mouseleave",()=>{focus.style.opacity="0";tip.style.opacity="0";dots.forEach(d=>d.style.opacity="0");});
+  holder.appendChild(svg);
+}
+
 // ----- contribution -----
 function renderContrib(){
   const {cur,prev}=windowIdx();const met=MET[state.metric];
@@ -410,7 +474,8 @@ function renderFoot(){
   $("#src").innerHTML=`daily <b>${fmtDate(DATES[0])} \u2192 ${fmtDate(DATES[DATES.length-1])}</b> (${DATES.length} days) \u00b7 leads via <b>traffic_lead_detail \u2229 CRM sessions</b>`;
   $("#foot").innerHTML=`
   <p><b>Metrics.</b> <code>Leads</code>/<code>adviews</code>/<code>listings</code> are additive (\u03a3 over the range). <code>DAU</code>, <code>users w/ lead</code>, <code>users w/ adview</code>, <code>users w/ listing</code> are distinct-user counts shown as <b>avg/day</b> over the range (sum of daily distinct \u00f7 days) \u2014 the same way your monitor query computes <code>daus</code>. Per-day values are exact; ranges use the average so multi-homing users aren't double-counted.</p>
-  <p><b>Source</b> = the internal-comms tool the session came through (<code>onflow</code>, <code>itn_comms</code>, in-app, banner, braze, direct/other) \u2014 this is why campaigns absent from <code>raw__onflow__campaigns</code> (like <code>awo_rewards</code>) still appear. <b>Vertical</b> &amp; <b>side</b> are parsed from the campaign name / your owner lists (side: product / supply / other / demand). <code>dau_w_save_ad</code> needs the 25 TB <code>traffic_event_detail</code> and is left out to keep cost sane \u2014 available on request for a short window.</p>
+  <p><b>Source</b> = the internal-comms tool the session came through (<code>onflow</code>, <code>itn_comms</code>, in-app, banner, braze, direct/other) \u2014 this is why campaigns absent from <code>raw__onflow__campaigns</code> (like <code>awo_rewards</code>) still appear. <b>Vertical</b> &amp; <b>side</b> are parsed from the campaign name / your owner lists (side: product / supply / other / demand). <b>Ad saves</b> (<code>save_ad</code>, additive) &amp; <b>users w/ save-ad</b> (<code>dau_w_save_ad</code>, avg/day) come from <code>traffic_event_detail</code> (<code>eventAction='save_ad'</code>) joined into CRM sessions.</p>
+  <p><b>Xu h\u01b0\u1edbng theo vertical.</b> One line per vertical (gds/veh/pty/jobs/other) of the selected metric, daily; the legend shows each vertical's window-over-window &Delta;. This view splits by vertical, so it ignores the top Vertical filter (but respects side / source / registered / search).</p>
   <p style="color:var(--muted)">Snapshot ${new Date().toISOString().slice(0,10)}.</p>`;
 }
 
@@ -431,15 +496,15 @@ function segWire(id,attr,key,extra){$(id).addEventListener("click",e=>{const bt=
   [...$(id).children].forEach(x=>x.setAttribute("aria-pressed","false"));bt.setAttribute("aria-pressed","true");state[key]=bt.getAttribute(attr);if(extra)extra(bt.getAttribute(attr));renderAll();});}
 segWire("#rangeSeg","data-r","range",r=>{$("#customRange").classList.toggle("on",r==="custom");});
 segWire("#vertSeg","data-v","vert");segWire("#sideSeg","data-s","side");segWire("#regSeg","data-g","reg");
-let st;$("#searchBox").addEventListener("input",e=>{state.search=e.target.value;clearTimeout(st);st=setTimeout(()=>{renderContrib();renderTable();renderTrend();renderKPIs();renderSplits();},180);});
+let st;$("#searchBox").addEventListener("input",e=>{state.search=e.target.value;clearTimeout(st);st=setTimeout(()=>{renderContrib();renderTable();renderTrend();renderVertTrend();renderKPIs();renderSplits();},180);});
 const root=document.documentElement;
 function curDark(){const t=root.getAttribute("data-theme");if(t)return t==="dark";return mm("(prefers-color-scheme:dark)").matches;}
 $("#themeBtn").addEventListener("click",()=>{const d=!curDark();root.setAttribute("data-theme",d?"dark":"light");$("#themeIco").textContent=d?"\u263e":"\u2600";renderAll();});
 mm("(prefers-color-scheme:dark)").addEventListener("change",()=>{if(!root.getAttribute("data-theme"))renderAll();});
 function renderSplits(){renderSplit("#c_side",2,k=>SIDE_COLOR[k]||"var(--s-other)");renderSplit("#c_source",4,k=>k==="onflow"?"var(--accent)":"var(--s-other)");}
-function renderAll(){renderKPIs();renderTrend();renderContrib();renderSplits();renderTable();}
+function renderAll(){renderKPIs();renderTrend();renderVertTrend();renderContrib();renderSplits();renderTable();}
 fillSelects();setupCustom();renderFoot();renderAll();
-let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(renderTrend,150);});
+let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{renderTrend();renderVertTrend();},150);});
 })();
 </script>
 </body>
