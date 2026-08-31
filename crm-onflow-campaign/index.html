@@ -175,7 +175,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
   </div>
 
   <div class="section-h">Funnel theo cohort <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)" id="funnel-scope"></span></div>
-  <p class="section-sub" id="funnel-sub">Từng bước một cho scope đang chọn: chỗ nào rớt mạnh nhất là chỗ cần optimize. Bảng bên dưới xếp hạng từng cohort theo bước yếu nhất.</p>
+  <p class="section-sub" id="funnel-sub">Từng bước một cho scope đang chọn: chỗ nào rớt mạnh nhất là chỗ cần optimize. <b>2 universe tách biệt</b> — Tin nhắn (A) và Trên app (B) — mỗi phễu chỉ tính tỉ lệ trong cùng mẫu số của nó, không nối mũi tên giữa hai khối.</p>
   <div class="controls" style="margin-bottom:12px">
     <div class="ctl"><span class="ctl-label">Cohort</span>
       <div class="seg" id="cohortSeg">
@@ -202,7 +202,38 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       <div id="funnel-read"></div>
     </div>
   </div>
-  <div class="tbl-wrap" style="margin-top:16px"><table id="funnelTbl"><thead></thead><tbody></tbody></table></div>
+  <p class="section-sub" style="margin-top:16px;margin-bottom:8px">Xếp hạng cohort theo Delivery. <b style="color:var(--s-supply)">Nhóm A · Tin nhắn</b> = Onflow message events (mẫu số = người được gửi). <b style="color:var(--accent)">Nhóm B · Trên app</b> = daily active users (traffic; Σ nhiều ngày = user-days, không phải user duy nhất trong kỳ). Màu ô theo hằng số benchmark <code>BENCH</code> (xanh ≥ good · vàng ≥ warn · đỏ &lt; warn); hàng mờ = n nhỏ (DAU w/ adview &lt; 100). "Bước yếu nhất" chỉ xét Delivery (A) — không so chéo A↔B.</p>
+  <div class="tbl-wrap"><table id="funnelTbl"><thead></thead><tbody></tbody></table></div>
+
+  <div class="section-h">Baseline vs Incremental &mdash; đo lift <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&mdash; ước lượng theo kỳ trước, chưa có holdout</span></div>
+  <p class="section-sub">So sánh outcome gắn campaign ở cửa sổ hiện tại với <b>cùng chỉ số ở kỳ liền trước bằng độ dài</b> (tái dùng <code>windowIdx().prev</code>). Đây <b>KHÔNG phải lift nhân quả</b> &mdash; chỉ là thay đổi theo thời gian; muốn lift thật cần holdout (xem khối bên phải).</p>
+  <div class="grid g-2">
+    <div class="panel">
+      <div class="p-head">
+        <div><div class="p-title">Lift ước lượng theo <span id="lift-dim-name">vertical</span></div><div class="p-desc">Campaign-touched (Σ user-days) vs baseline kỳ trước · <b>ước lượng theo kỳ trước, không phải incremental lift</b>.</div></div>
+        <div class="seg" id="liftDimSeg" style="align-self:flex-start">
+          <button data-ld="vertical" type="button" aria-pressed="true">Vertical</button>
+          <button data-ld="side" type="button">Side</button>
+        </div>
+      </div>
+      <div class="seg" id="liftMetSeg" style="margin-bottom:12px">
+        <button data-lm="save" type="button" aria-pressed="true">Users w/ save-ad · north-star</button>
+        <button data-lm="lead" type="button">Users w/ lead</button>
+      </div>
+      <div class="tbl-wrap" style="box-shadow:none"><table id="liftTbl" style="min-width:0"><thead></thead><tbody></tbody></table></div>
+    </div>
+    <div class="panel" style="opacity:.75">
+      <div class="p-head"><div><div class="p-title">Attributed (holdout) <span class="chtag" style="color:var(--warn);border-color:var(--warn)">chưa đủ dữ liệu</span></div><div class="p-desc">Lift nhân quả thật &mdash; cần pipeline bổ sung, không hiển thị số giả.</div></div></div>
+      <div style="font-size:12.5px;color:var(--ink-2);line-height:1.7">
+        <p style="margin:0 0 8px">Để chứng minh campaign tạo giá trị tăng thêm (không chỉ &ldquo;ăn&rdquo; organic) cần một trong hai, hiện <b>KHÔNG có</b> trong <code>raw_payload.json</code>:</p>
+        <ul style="margin:0 0 8px;padding-left:18px">
+          <li>Cột <code>is_holdout</code> (control flag) ở tầng user &mdash; nhóm không nhận comms để so.</li>
+          <li>Join <code>user_id + campaign_id + timestamp</code> giữa send-log và traffic &rarr; tính <b>attributed save/lead</b> (save bởi user đã nhận+mở trong attribution window).</li>
+        </ul>
+        <p style="margin:0;color:var(--muted)">Khối này disabled đến khi payload có các trường trên.</p>
+      </div>
+    </div>
+  </div>
 
   <div class="section-h">Campaign contribution to the change <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&mdash; window vs previous equal window</span></div>
   <p class="section-sub" id="contrib-sub"></p>
@@ -249,7 +280,7 @@ const SIDE_COLOR={demand:"var(--s-demand)",supply:"var(--s-supply)",product:"var
 // metric registry: key -> {col, add, label}
 const MET={
   leads:{col:7,add:true,label:"Leads"},
-  dau:{col:2,add:false,label:"DAU (reach)"},
+  dau:{col:2,add:false,label:"DAU"},
   dau_w_lead:{col:8,add:false,label:"Users w/ lead"},
   dau_w_adview:{col:3,add:false,label:"Users w/ adview"},
   dau_w_listing:{col:4,add:false,label:"Users w/ listing"},
@@ -260,7 +291,21 @@ const MET={
 };
 const MET_ORDER=["leads","dau","dau_w_lead","dau_w_save_ad","save_ad","dau_w_adview","dau_w_listing","adview_sum","listing_sum"];
 
+// ----- benchmarks (ngưỡng tô màu) — placeholder, team chỉnh theo baseline thực -----
+// LOGIC cố định: xanh ≥ good · vàng trong [warn, good) · đỏ < warn. Mỗi rate chỉ so trong universe của nó.
+const BENCH={
+  delivery:{good:0.15,warn:0.08},   // reach/sent            (A)
+  ctr_reach:{good:0.08,warn:0.04},  // open/reach            (A)
+  view:{good:0.55,warn:0.40},       // dau_w_adview/dau       (B)
+  lead:{good:0.20,warn:0.12},       // dau_w_lead/dau_w_adview(B)
+  save:{good:0.10,warn:0.05}        // dau_w_save_ad/dau_w_adview (B · north-star)
+};
+const SMALL_N=100; // dau_w_adview < SMALL_N → sample nhỏ, làm mờ (đừng đọc 0% là 'tệ')
+function benchColor(v,b){ if(v==null||!b)return ""; if(v>=b.good)return "var(--good-ink)"; if(v>=b.warn)return "var(--warn)"; return "var(--bad-ink)"; }
+function benchBg(v,b){ if(v==null||!b)return ""; if(v>=b.good)return "color-mix(in srgb,var(--good) 12%,transparent)"; if(v>=b.warn)return "var(--warn-soft)"; return "color-mix(in srgb,var(--bad) 10%,transparent)"; }
+
 let state={range:"7",metric:"leads",vert:"all",side:"all",source:"all",reg:"reg",search:"",funnelCohort:"campaign",funnelCamp:"",
+  liftDim:"vertical",liftMet:"save",
   cStart:DATES[Math.max(0,DATES.length-7)],cEnd:DATES[DATES.length-1]};
 const inConfig=ci=>!!(CAMPS[ci][6]||"").trim();  // registered in raw__onflow__campaigns (created_by present)
 
@@ -419,7 +464,7 @@ function renderVertTrend(){
 // ----- funnel by cohort -----
 // Full funnel: Sent → Reach → Open (Onflow send-log, message events) → Landed → Viewed → Lead/Saved (traffic, distinct users).
 // Open→Landed bridges two systems (Onflow clicks vs our tracked sessions) so it's approximate (~) and not a worst-drop candidate.
-function stageSums(ok){const set=new Set(windowIdx().cur);
+function stageSums(ok,idxArr){const set=new Set(idxArr||windowIdx().cur);
   const s={sent:0,reach:0,opens:0,recipients:0,reached:0,viewed:0,saved:0,lead:0};
   for(const row of D){ if(!set.has(row[0])||!ok(row[1]))continue;
     s.reached+=row[2];s.viewed+=row[3];s.lead+=row[8];s.saved+=row[10];
@@ -441,59 +486,86 @@ function renderFunnel(){
   for(const row of D){ if(!winSet.has(row[0])||!campOk(row[1])||!fCampOk(row[1]))continue; if(row[11]>0)sendCamp.add(row[1]); }
   const hasSend=sendCamp.size>0;
   const ok=hasSend?(ci=>campOk(ci)&&fCampOk(ci)&&sendCamp.has(ci)):(ci=>campOk(ci)&&fCampOk(ci));
-  const s=stageSums(ok);
+  const wi=windowIdx();
+  const s=stageSums(ok,wi.cur);
+  const sp=stageSums(ok,wi.prev);                               // kỳ liền trước bằng độ dài
+  const prevFull=wi.prev.length===wi.cur.length&&wi.prev.length>0;
   const scopeName=`${state.funnelCamp?'campaign ~ "'+state.funnelCamp+'"':(state.vert==="all"?"tất cả vertical":state.vert)+(state.side!=="all"?" · "+state.side:"")+(state.source!=="all"?" · "+state.source:"")+(state.reg==="reg"?" · registered":"")}`;
   $("#funnel-scope-name").textContent=scopeName;
   $("#funnel-scope").textContent=`— ${daysLabel(win)}`;
   $("#funnel-desc").innerHTML=hasSend
-    ? `Gồm <b>${sendCamp.size}</b> campaign Onflow có send-log. Đo bằng <b>2 nguồn</b>: <b>Tin nhắn</b> (Onflow: Sent/Reach/Open) và <b>Trên app</b> (traffic: Landed/View/Lead — distinct users). Open và Landed đến từ 2 hệ thống nên KHÔNG tính tỉ lệ trực tiếp giữa chúng.`
+    ? `Gồm <b>${sendCamp.size}</b> campaign Onflow có send-log. <b>2 universe tách biệt</b>: <b style="color:var(--s-supply)">Tin nhắn</b> (Onflow message events: Sent/Reach/Open, mẫu số = người được gửi) và <b style="color:var(--accent)">Trên app</b> (traffic: DAU/View/Lead/Save — daily active users). Open (tin nhắn) và DAU (app) đo ở 2 hệ thống khác nhau → KHÔNG tính tỉ lệ trực tiếp giữa chúng.`
     : `Scope không có campaign Onflow (send-log) → chỉ hiện phần <b>trên app</b>. Chọn <b>Source = onflow</b> để thấy Sent→Reach→Open.`;
-  // conversions (each within its own system) + worst step across the 4 clean transitions
-  const cR=s.sent?s.reach/s.sent:null, cO=s.reach?s.opens/s.reach:null,
-        cV=s.reached?s.viewed/s.reached:null, cL=s.viewed?s.lead/s.viewed:null;
-  const cand=[];
-  if(hasSend){if(cR!=null)cand.push(["reach",1-cR]);if(cO!=null)cand.push(["open",1-cO]);}
-  if(cV!=null)cand.push(["view",1-cV]);if(cL!=null)cand.push(["lead",1-cL]);
-  const worstKey=cand.length?cand.reduce((a,b)=>b[1]>a[1]?b:a)[0]:"";
+  // conversions — mỗi tỉ lệ CHỈ trong universe của nó (cùng mẫu số) → luôn ≤ 100%
+  const nd=win.length||1;
+  const cDelivery=s.sent?s.reach/s.sent:null,   // reach/sent            (A)
+        cCtrReach=s.reach?s.opens/s.reach:null,  // open/reach            (A)
+        cCtrSent=s.sent?s.opens/s.sent:null,     // open/sent = delivery×ctr_reach (A)
+        cView=s.reached?s.viewed/s.reached:null, // dau_w_adview/dau       (B)
+        cLead=s.viewed?s.lead/s.viewed:null,     // dau_w_lead/dau_w_adview(B)
+        cSave=s.viewed?s.saved/s.viewed:null;    // dau_w_save_ad/dau_w_adview (B · north-star)
+  // "rớt mạnh nhất" TÍNH RIÊNG trong từng universe — KHÔNG so chéo A ↔ B
+  const candA=[];if(cDelivery!=null)candA.push(["reach",1-cDelivery]);if(cCtrReach!=null)candA.push(["open",1-cCtrReach]);
+  const worstA=candA.length?candA.reduce((a,b)=>b[1]>a[1]?b:a)[0]:"";
+  const candB=[];if(cView!=null)candB.push(["view",1-cView]);if(cLead!=null)candB.push(["lead",1-cLead]);
+  const worstB=candB.length?candB.reduce((a,b)=>b[1]>a[1]?b:a)[0]:"";
   const box=$("#c_funnel");box.innerHTML="";
-  const subhead=(txt,col)=>`<div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:${col};font-weight:700;margin:0 0 6px">${txt}</div>`;
-  const bar=(label,count,w,convHtml,worst,segCol)=>`<div style="margin:0 0 8px">
+  const subhead=(txt,col,note)=>`<div style="margin:0 0 6px"><div style="font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:${col};font-weight:700">${txt}</div>${note?`<div style="font-size:10.5px;color:var(--muted);margin-top:1px">${note}</div>`:""}</div>`;
+  // Δ so với kỳ trước (absolute) — dòng phụ mờ dưới mỗi thanh. nd>1 → số là user-days cho khối app.
+  const scomp=n=>(n>=0?"+":"−")+compact(Math.abs(n));
+  const dline=(cur,prev)=>{ if(!prevFull)return `<div style="font-size:10.5px;color:var(--muted);margin-top:3px">kỳ trước: <span style="color:var(--muted)">— (chưa đủ cửa sổ)</span></div>`;
+    const d=cur-prev,r=prev?d/prev:0,col=d>=0?'var(--good-ink)':'var(--bad-ink)';
+    return `<div style="font-size:10.5px;color:var(--muted);margin-top:3px">kỳ trước <b class="mono" style="color:var(--ink-2)">${fmt(prev)}</b> <span style="color:var(--muted)">·</span> <span class="mono" style="color:${col};font-weight:600">Δ ${scomp(d)}${prev?` · ${d>=0?'+':''}${pct(r,0)}`:' · new'}</span></div>`; };
+  const bar=(label,count,w,convHtml,worst,segCol,strong,cur,prev)=>`<div style="margin:0 0 8px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
-        <span style="color:var(--ink);font-weight:600">${label}${worst?' <span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">rớt mạnh nhất</span>':''}</span>
+        <span style="color:var(--ink);font-weight:${strong?700:600}">${label}${worst?' <span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">rớt mạnh nhất</span>':''}${strong?' <span class="chtag" style="color:var(--accent);border-color:var(--accent)">north-star</span>':''}</span>
         <span class="mono" style="color:var(--ink);font-weight:600">${fmt(count)}${convHtml?' · '+convHtml:''}</span></div>
-      <div style="height:20px;background:var(--plane);border-radius:6px;overflow:hidden"><div style="height:100%;width:${Math.max(1.5,w).toFixed(1)}%;background:${worst?'var(--bad)':segCol};border-radius:6px"></div></div>
+      <div style="height:${strong?22:20}px;background:var(--plane);border-radius:6px;overflow:hidden"><div style="height:100%;width:${Math.max(1.5,Math.min(100,w)).toFixed(1)}%;background:${worst?'var(--bad)':segCol};border-radius:6px${strong?';box-shadow:inset 0 0 0 2px var(--accent)':''}"></div></div>
+      ${cur!=null?dline(cur,prev):''}
     </div>`;
-  const cvt=(c,base,worst)=>`<span style="color:${worst?'var(--bad-ink)':'var(--ink-2)'};font-weight:600">${pct(c,1)}</span> <span style="color:var(--muted)">of ${base}</span>`;
+  // nhãn conversion: % + absolute của mẫu số, vd "14.0% of sent (5.1M)"
+  const cvt=(c,base,worst,baseAbs)=>c==null?'':`<span style="color:${worst?'var(--bad-ink)':'var(--ink-2)'};font-weight:600">${pct(c,1)}</span> <span style="color:var(--muted)">of ${base}${baseAbs!=null?` (${compact(baseAbs)})`:''}</span>`;
   if(hasSend){
     const t=s.sent||1,SC="var(--s-supply)";
-    box.insertAdjacentHTML("beforeend",subhead("Tin nhắn · Onflow (messages)",SC));
-    box.insertAdjacentHTML("beforeend",bar("Sent",s.sent,100,'<span style="color:var(--muted)">audience</span>',false,SC));
-    box.insertAdjacentHTML("beforeend",bar("Reach / delivered",s.reach,s.reach/t*100,cvt(cR,"sent",worstKey==="reach"),worstKey==="reach",SC));
-    box.insertAdjacentHTML("beforeend",bar("Open / click msg",s.opens,s.opens/t*100,cvt(cO,"reach",worstKey==="open"),worstKey==="open",SC));
-    box.insertAdjacentHTML("beforeend",`<div style="display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:var(--muted);font-size:11px"><span style="flex:1;height:1px;background:var(--hair)"></span>↓ mở tin &rarr; vào app · nguồn đo khác, không so tỉ lệ trực tiếp<span style="flex:1;height:1px;background:var(--hair)"></span></div>`);
+    box.insertAdjacentHTML("beforeend",subhead("Tin nhắn · Onflow (message events)",SC,"Mẫu số = tệp người được gửi · mọi tỉ lệ ≤ 100% · Δ so kỳ trước"));
+    box.insertAdjacentHTML("beforeend",bar("Sent",s.sent,100,'<span style="color:var(--muted)">audience</span>',false,SC,false,s.sent,sp.sent));
+    box.insertAdjacentHTML("beforeend",bar("Reach / delivered",s.reach,s.reach/t*100,cvt(cDelivery,"sent",worstA==="reach",s.sent),worstA==="reach",SC,false,s.reach,sp.reach));
+    box.insertAdjacentHTML("beforeend",bar("Open / click msg",s.opens,s.opens/t*100,
+      `${cvt(cCtrReach,"reach",worstA==="open",s.reach)} <span style="color:var(--muted)">·</span> ${cvt(cCtrSent,"sent",false,s.sent)}`,worstA==="open",SC,false,s.opens,sp.opens));
+    box.insertAdjacentHTML("beforeend",`<div style="display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:var(--muted);font-size:11px"><span style="flex:1;height:1px;background:var(--hair)"></span>↓ mở tin &rarr; vào app · nguồn đo khác, KHÔNG so tỉ lệ trực tiếp<span style="flex:1;height:1px;background:var(--hair)"></span></div>`);
   }
-  const AC="var(--accent)",ta=s.reached||1;
-  box.insertAdjacentHTML("beforeend",subhead("Trên app · traffic (distinct users)",AC));
-  box.insertAdjacentHTML("beforeend",bar(hasSend?"Landed in app":"Click / Landed",s.reached,100,'<span style="color:var(--muted)">arrived</span>',false,AC));
-  box.insertAdjacentHTML("beforeend",bar("Viewed ad",s.viewed,s.viewed/ta*100,cvt(cV,"landed",worstKey==="view"),worstKey==="view",AC));
-  box.insertAdjacentHTML("beforeend",bar("Lead / contact",s.lead,s.lead/ta*100,cvt(cL,"view",worstKey==="lead"),worstKey==="lead",AC));
-  box.insertAdjacentHTML("beforeend",bar("Saved ad",s.saved,s.saved/ta*100,s.viewed?cvt(s.saved/s.viewed,"view",false):"",false,AC));
+  const AC="var(--accent)";
+  const udNote=nd>1?`daily active users · Σ ${nd} ngày = <b>user-days</b> (một người active nhiều ngày đếm nhiều lần), không phải user duy nhất trong kỳ · Δ so kỳ trước`:"daily active users gắn campaign · Δ so kỳ trước";
+  box.insertAdjacentHTML("beforeend",subhead("Trên app · traffic",AC,udNote));
+  box.insertAdjacentHTML("beforeend",bar(nd>1?"DAU · user-days":"DAU",s.reached,100,
+    nd>1?`<span style="color:var(--muted)">tb/ngày ${fmt(s.reached/nd)}</span>`:'<span style="color:var(--muted)">active</span>',false,AC,false,s.reached,sp.reached));
+  box.insertAdjacentHTML("beforeend",bar("Viewed ad",s.viewed,cView!=null?cView*100:0,cvt(cView,"DAU",worstB==="view",s.reached),worstB==="view",AC,false,s.viewed,sp.viewed));
+  // 2 nhánh SONG SONG — cùng mẫu số cha = Viewed ad (Adview). KHÔNG xếp Save nối tiếp sau Lead.
+  box.insertAdjacentHTML("beforeend",`<div style="display:flex;align-items:center;gap:8px;margin:10px 0 8px;color:var(--muted);font-size:11px"><span style="width:14px"></span>2 nhánh song song · cùng "% of Viewed ad"<span style="flex:1;height:1px;background:var(--hair)"></span></div>`);
+  box.insertAdjacentHTML("beforeend",`<div style="padding-left:14px;border-left:2px solid var(--hair-strong)">`+
+    bar("├─ Lead / contact",s.lead,cLead!=null?cLead*100:0,cvt(cLead,"Viewed ad",worstB==="lead",s.viewed),worstB==="lead",AC,false,s.lead,sp.lead)+
+    bar("└─ Saved ad",s.saved,cSave!=null?cSave*100:0,cvt(cSave,"Viewed ad",false,s.viewed),false,AC,true,s.saved,sp.saved)+
+    `</div>`);
   // read panel
-  const LAB={reach:["Reach / delivered",cR,"sent"],open:["Open / click msg",cO,"reach"],view:["Viewed ad",cV,"landed"],lead:["Lead / contact",cL,"view"]};
-  const w=LAB[worstKey];
+  const LABA={reach:["Reach / delivered",cDelivery,"sent"],open:["Open / click msg",cCtrReach,"reach"]};
+  const LABB={view:["Viewed ad",cView,"DAU"],lead:["Lead / contact",cLead,"Viewed ad"]};
+  const wA=LABA[worstA],wB=LABB[worstB];
+  const weakCard=(title,w,uni)=>`<div style="background:color-mix(in srgb,var(--bad) 9%,transparent);border:1px solid color-mix(in srgb,var(--bad) 30%,transparent);border-radius:10px;padding:10px 12px;margin-bottom:10px">
+       <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--bad-ink);font-weight:700;margin-bottom:3px">${title} <span style="color:var(--muted);font-weight:600">· ${uni}</span></div>
+       <div style="font-size:12.5px;color:var(--ink)">${w&&w[1]!=null?`<b>${w[0]}</b> — chỉ <b>${pct(w[1],1)}</b> đi tiếp từ <b>${w[2]}</b> (mất <b>${pct(1-w[1],0)}</b>).`:"Chưa đủ dữ liệu."}</div>
+     </div>`;
   const readBox=$("#funnel-read");
   readBox.innerHTML=
-    `<div style="background:color-mix(in srgb,var(--bad) 9%,transparent);border:1px solid color-mix(in srgb,var(--bad) 30%,transparent);border-radius:10px;padding:11px 13px;margin-bottom:12px">
-       <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--bad-ink);font-weight:700;margin-bottom:4px">Rớt mạnh nhất</div>
-       <div style="font-size:13px;color:var(--ink)">${w?`<b>${w[0]}</b> — chỉ <b>${pct(w[1],1)}</b> đi tiếp từ <b>${w[2]}</b> (mất <b>${pct(1-w[1],0)}</b>). Ưu tiên optimize bước này.`:"Chưa đủ dữ liệu."}</div>
-     </div>`+
-    (hasSend?`<div style="display:flex;gap:18px;flex-wrap:wrap;font-size:12px">
-       <div><div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em">Delivery</div><div class="mono" style="font-weight:600;font-size:16px">${pct(cR||0,1)}</div><div style="color:var(--muted);font-size:11px">reach / sent</div></div>
-       <div><div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em">CTR</div><div class="mono" style="font-weight:600;font-size:16px">${pct(cO||0,1)}</div><div style="color:var(--muted);font-size:11px">open / reach</div></div>
+    (hasSend?weakCard("Bước yếu nhất (Delivery)",wA,"Tin nhắn · A"):"")+
+    weakCard("Bước yếu nhất (Outcome)",wB,"Trên app · B")+
+    (hasSend?`<div style="display:flex;gap:16px 18px;flex-wrap:wrap;font-size:12px">
+       <div><div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em">Delivery</div><div class="mono" style="font-weight:600;font-size:16px">${pct(cDelivery||0,1)}</div><div style="color:var(--muted);font-size:11px">reach / sent</div></div>
+       <div><div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em">CTR</div><div class="mono" style="font-weight:600;font-size:16px">${pct(cCtrReach||0,1)}</div><div style="color:var(--muted);font-size:11px">open / reach</div></div>
+       <div><div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em">CTR</div><div class="mono" style="font-weight:600;font-size:16px">${pct(cCtrSent||0,1)}</div><div style="color:var(--muted);font-size:11px">open / sent</div></div>
        <div><div style="color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em">Recipients</div><div class="mono" style="font-weight:600;font-size:16px">${compact(s.recipients)}</div><div style="color:var(--muted);font-size:11px">unique devices</div></div>
      </div>`
      :`<div style="font-size:12px;color:var(--ink-2)">Không có send-log Onflow trong scope (campaign non-Onflow: itn_comms / floatingbutton…). Đổi <b>Source = onflow</b> để xem đủ Sent→Reach→Open.</div>`);
-  $("#funnel-note").innerHTML=`<b>${daysLabel(win)}</b> · Sent/Reach/Open = Onflow message events · Landed/View/Lead/Save = distinct users (traffic)`;
+  $("#funnel-note").innerHTML=`<b>${daysLabel(win)}</b> · Sent/Reach/Open = Onflow message events · DAU/View/Lead/Save = daily active users (traffic${nd>1?"; Σ "+nd+" ngày = user-days, không phải user duy nhất trong kỳ":""})`;
 }
 function renderFunnelTable(){
   const dim=state.funnelCohort,cur=new Set(windowIdx().cur),g=new Map();
@@ -504,28 +576,76 @@ function renderFunnelTable(){
     o.sent+=row[11];o.reach+=row[12];o.opens+=row[13];g.set(key,o);}
   let list=[...g.entries()].map(([k,o])=>{
     const cDel=o.sent?o.reach/o.sent:null,cCtr=o.reach?o.opens/o.reach:null,
-          cView=o.reached?o.viewed/o.reached:null,cLead=o.viewed?o.lead/o.viewed:null;
+          cView=o.reached?o.viewed/o.reached:null,cLead=o.viewed?o.lead/o.viewed:null,
+          cSave=o.viewed?o.saved/o.viewed:null;
+    // "bước yếu nhất" CHỈ xét universe A (Delivery) — không so chéo với outcome (B)
     const steps=[];if(cDel!=null)steps.push(["Reach/Sent",cDel]);if(cCtr!=null)steps.push(["Open/Reach",cCtr]);
-    if(cView!=null)steps.push(["View/Landed",cView]);if(cLead!=null)steps.push(["Lead/View",cLead]);
     const weak=steps.length?steps.reduce((a,b)=>b[1]<a[1]?b:a):null;
-    return {name:dim==="campaign"?CAMPS[k][0]:(k||"—"),sent:o.sent,reached:o.reached,cDel,cCtr,cView,cLead,weak};})
-    .filter(x=>x.reached>0||x.sent>0).sort((a,b)=>(b.sent||b.reached)-(a.sent||a.reached)).slice(0,20);
+    return {name:dim==="campaign"?CAMPS[k][0]:(k||"—"),sent:o.sent,reach:o.reach,opens:o.opens,dau:o.reached,adview:o.viewed,lead:o.lead,saved:o.saved,cDel,cCtr,cView,cLead,cSave,weak};})
+    .filter(x=>x.dau>0||x.sent>0).sort((a,b)=>(b.sent||b.dau)-(a.sent||a.dau)).slice(0,20);
   const thead=$("#funnelTbl thead"),tb=$("#funnelTbl tbody");
   const dimLab={campaign:"Campaign",vertical:"Vertical",side:"Side",source:"Source"}[dim];
-  thead.innerHTML=`<tr><th>${dimLab}</th><th>Sent</th><th>Reach%</th><th>CTR</th><th>Landed</th><th>View%</th><th>Lead%</th><th>Bước yếu nhất</th></tr>`;
+  const sub='font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)';
+  const bl='border-left:2px solid var(--hair-strong)';
+  thead.innerHTML=
+    `<tr>
+       <th rowspan="2" style="vertical-align:bottom">${dimLab}</th>
+       <th colspan="3" style="text-align:center;color:var(--s-supply);${bl}">Tin nhắn · Onflow (A)</th>
+       <th colspan="4" style="text-align:center;color:var(--accent);${bl}">Trên app · traffic (B)</th>
+       <th rowspan="2" style="vertical-align:bottom;${bl}">Bước yếu nhất<br><span style="${sub}">(Delivery)</span></th>
+     </tr>
+     <tr>
+       <th style="position:static;left:auto;${bl}">SENT</th><th>DELIVERY%<br><span style="${sub}">reach/sent</span></th><th>CTR<br><span style="${sub}">open/reach</span></th>
+       <th style="${bl}">DAU</th><th>VIEW%<br><span style="${sub}">dau_w_adview / dau</span></th><th>LEAD%<br><span style="${sub}">dau_w_lead / dau_w_adview</span></th><th style="color:var(--accent)">SAVE% ★<br><span style="${sub}">dau_w_save_ad / dau_w_adview</span></th>
+     </tr>`;
   tb.innerHTML="";
-  if(!list.length){tb.innerHTML='<tr><td colspan="8" style="color:var(--muted);text-align:center;padding:16px">Không có cohort trong scope.</td></tr>';return;}
+  if(!list.length){tb.innerHTML='<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:16px">Không có cohort trong scope.</td></tr>';return;}
   const P=v=>v==null?'<span style="color:var(--muted)">—</span>':pct(v,1);
-  list.forEach(x=>{const cell=(v,name)=>`<td class="num" style="${x.weak&&x.weak[0]===name?'color:var(--bad-ink);font-weight:700':''}">${P(v)}</td>`;
+  const numline=n=>n!=null?`<div style="font-size:10px;color:var(--muted);font-weight:400;margin-top:1px">${fmt(n)}</div>`:'';
+  // ô tỉ lệ (B): % lớn + số absolute tử số nhỏ bên dưới (vd dau_w_adview = bao nhiêu)
+  const rcell=(v,b,abs,extra)=>{const col=benchColor(v,b),bg=benchBg(v,b);
+    return `<td class="num" style="vertical-align:top;${extra||''}${bg?`background:${bg};`:''}"><div style="${col?`color:${col};`:''}font-weight:600">${P(v)}</div>${numline(abs)}</td>`;};
+  list.forEach(x=>{
+    const small=x.adview<SMALL_N;
+    // ô Delivery (A): % lớn + số absolute tử số nhỏ bên dưới
+    const weakCell=(v,name,abs)=>{const isW=x.weak&&x.weak[0]===name,col=benchColor(v,name==="Reach/Sent"?BENCH.delivery:BENCH.ctr_reach);
+      return `<td class="num" style="vertical-align:top"><div style="${isW?'color:var(--bad-ink);font-weight:700;':(col?`color:${col};font-weight:600;`:'')}">${P(v)}</div>${numline(abs)}</td>`;};
     const tr=el("tr");
-    tr.innerHTML=`<td title="${x.name}">${dim==="campaign"?'<span style="text-decoration:underline dotted;text-underline-offset:2px">'+x.name+'</span>':x.name}</td>`
-      +`<td class="num">${x.sent?fmt(x.sent):'<span style="color:var(--muted)">—</span>'}</td>`
-      +cell(x.cDel,"Reach/Sent")+cell(x.cCtr,"Open/Reach")
-      +`<td class="num">${fmt(x.reached)}</td>`
-      +cell(x.cView,"View/Landed")+cell(x.cLead,"Lead/View")
-      +`<td style="text-align:left">${x.weak?`<span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">${x.weak[0]}</span>`:'—'}</td>`;
-    if(dim==="campaign"){tr.style.cursor="pointer";tr.title="Click để xem funnel của campaign này";
+    if(small){tr.style.opacity=".5";tr.title=`n nhỏ (DAU w/ adview < ${SMALL_N}) — chưa đủ tin, đừng đọc 0% là 'tệ'`;}
+    tr.innerHTML=`<td title="${x.name}">${dim==="campaign"?'<span style="text-decoration:underline dotted;text-underline-offset:2px">'+x.name+'</span>':x.name}${small?' <span class="chtag" style="color:var(--warn);border-color:var(--warn)">n nhỏ</span>':''}</td>`
+      +`<td class="num" style="vertical-align:top;${bl}">${x.sent?fmt(x.sent):'<span style="color:var(--muted)">—</span>'}</td>`
+      +weakCell(x.cDel,"Reach/Sent",x.reach)+weakCell(x.cCtr,"Open/Reach",x.opens)
+      +`<td class="num" style="vertical-align:top;${bl}">${fmt(x.dau)}</td>`
+      +rcell(x.cView,BENCH.view,x.adview)+rcell(x.cLead,BENCH.lead,x.lead)+rcell(x.cSave,BENCH.save,x.saved)
+      +`<td style="text-align:left;vertical-align:top;${bl}">${x.weak?`<span class="chtag" style="color:var(--bad-ink);border-color:var(--bad)">${x.weak[0]}</span>`:'—'}</td>`;
+    if(dim==="campaign"){tr.style.cursor="pointer";
       tr.addEventListener("click",()=>{state.funnelCamp=x.name;const inp=$("#funnelCampInput");if(inp)inp.value=x.name;$("#funnelCampClear").style.display="";renderFunnel();renderFunnelTable();});}
+    tb.appendChild(tr);});
+}
+
+// ----- lift (baseline vs kỳ trước — ước lượng, KHÔNG phải nhân quả) -----
+const LIFT_MET={save:{col:10,label:"Users w/ save-ad"},lead:{col:8,label:"Users w/ lead"}};
+function renderLift(){
+  const {cur,prev}=windowIdx();const dim=state.liftDim,mc=LIFT_MET[state.liftMet];
+  const dimIdx=dim==="vertical"?1:2;
+  const curSet=new Set(cur),prevSet=new Set(prev),now={},was={};
+  for(const row of D){ if(!campOk(row[1]))continue; const k=CAMPS[row[1]][dimIdx];
+    if(curSet.has(row[0]))now[k]=(now[k]||0)+row[mc.col];
+    if(prevSet.has(row[0]))was[k]=(was[k]||0)+row[mc.col]; }
+  const prevFull=prev.length===cur.length&&prev.length>0;
+  $("#lift-dim-name").textContent=dim;
+  const keys=[...new Set([...Object.keys(now),...Object.keys(was)])].filter(k=>now[k]||was[k]).sort((a,b)=>(now[b]||0)-(now[a]||0));
+  const thead=$("#liftTbl thead"),tb=$("#liftTbl tbody");
+  const sub='font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted)';
+  thead.innerHTML=`<tr><th style="text-align:left">${dim}</th><th>Campaign-touched<br><span style="${sub}">Σ user-days</span></th><th>Baseline<br><span style="${sub}">kỳ trước</span></th><th>Δ</th><th>Lift ước lượng<br><span style="${sub}">theo kỳ trước</span></th></tr>`;
+  tb.innerHTML="";
+  if(!keys.length){tb.innerHTML='<tr><td colspan="5" style="color:var(--muted);text-align:center;padding:14px">Không có dữ liệu trong scope.</td></tr>';return;}
+  keys.forEach(k=>{const c=now[k]||0,p=was[k]||0,d=c-p,r=p?d/p:null;
+    const tr=el("tr");
+    tr.innerHTML=`<td style="text-align:left">${k}</td><td class="num">${fmt(c)}</td>`
+      +`<td class="num" style="color:var(--muted)">${prevFull?fmt(p):'—'}</td>`
+      +`<td class="num ${d>=0?'pos':'neg'}">${prevFull?signed(d):'—'}</td>`
+      +`<td class="num" style="${prevFull&&r!=null?`color:${d>=0?'var(--good-ink)':'var(--bad-ink)'};font-weight:600`:'color:var(--muted)'}">${prevFull&&r!=null?(d>=0?'+':'')+pct(r,0):'cần kỳ trước'}</td>`;
     tb.appendChild(tr);});
 }
 
@@ -616,7 +736,7 @@ function renderTable(){
 function renderFoot(){
   $("#src").innerHTML=`daily <b>${fmtDate(DATES[0])} \u2192 ${fmtDate(DATES[DATES.length-1])}</b> (${DATES.length} days) \u00b7 leads via <b>traffic_lead_detail \u2229 CRM sessions</b>`;
   $("#foot").innerHTML=`
-  <p><b>Metrics.</b> <code>Leads</code>/<code>adviews</code>/<code>listings</code> are additive (\u03a3 over the range). <code>DAU</code>, <code>users w/ lead</code>, <code>users w/ adview</code>, <code>users w/ listing</code> are distinct-user counts shown as <b>avg/day</b> over the range (sum of daily distinct \u00f7 days) \u2014 the same way your monitor query computes <code>daus</code>. Per-day values are exact; ranges use the average so multi-homing users aren't double-counted.</p>
+  <p><b>Metrics &amp; universe.</b> <b>Universe A \u2014 Tin nh\u1eafn</b> (<code>sent</code>/<code>reach</code>/<code>opens</code>) = Onflow message events, m\u1eabu s\u1ed1 = t\u1ec7p ng\u01b0\u1eddi \u0111\u01b0\u1ee3c g\u1eedi. <b>Universe B \u2014 Tr\u00ean app</b> (<code>DAU</code>, <code>users w/ adview</code>, <code>users w/ lead</code>, <code>users w/ save-ad</code>) = <b>daily active users</b> theo ng\u00e0y (traffic). <code>Leads</code>/<code>adviews</code>/<code>listings</code>/<code>ad saves</code> are additive event counts (\u03a3 over the range). C\u00e1c ch\u1ec9 s\u1ed1 h\u1ecd <code>DAU*</code> l\u00e0 <b>daily distinct</b>: khi Range &gt; 1 ng\u00e0y, \u03a3 qua nhi\u1ec1u ng\u00e0y = <b>user-days</b> (m\u1ed9t ng\u01b0\u1eddi active nhi\u1ec1u ng\u00e0y \u0111\u1ebfm nhi\u1ec1u l\u1ea7n), <b>kh\u00f4ng ph\u1ea3i</b> s\u1ed1 user duy nh\u1ea5t trong k\u1ef3 \u2014 KPI/split hi\u1ec3n th\u1ecb <b>avg/day</b> \u0111\u1ec3 d\u1ec5 \u0111\u1ecdc. Kh\u00f4ng n\u1ed1i t\u1ec9 l\u1ec7 tr\u1ef1c ti\u1ebfp gi\u1eefa A v\u00e0 B (m\u1eabu s\u1ed1 kh\u00e1c nhau).</p>
   <p><b>Source</b> = the internal-comms tool the session came through (<code>onflow</code>, <code>itn_comms</code>, in-app, banner, braze, direct/other) \u2014 this is why campaigns absent from <code>raw__onflow__campaigns</code> (like <code>awo_rewards</code>) still appear. <b>Vertical</b> &amp; <b>side</b> are parsed from the campaign name / your owner lists (side: product / supply / other / demand). <b>Ad saves</b> (<code>save_ad</code>, additive) &amp; <b>users w/ save-ad</b> (<code>dau_w_save_ad</code>, avg/day) come from <code>traffic_event_detail</code> (<code>eventAction='save_ad'</code>) joined into CRM sessions.</p>
   <p><b>Xu h\u01b0\u1edbng theo vertical.</b> One line per vertical (gds/veh/pty/jobs/other) of the selected metric, daily; the legend shows each vertical's window-over-window &Delta;. This view splits by vertical, so it ignores the top Vertical filter (but respects side / source / registered / search).</p>
   <p style="color:var(--muted)">Snapshot ${new Date().toISOString().slice(0,10)}.</p>`;
@@ -649,13 +769,19 @@ segWire("#vertSeg","data-v","vert");segWire("#sideSeg","data-s","side");segWire(
 $("#cohortSeg").addEventListener("click",e=>{const bt=e.target.closest("button");if(!bt)return;
   [...$("#cohortSeg").children].forEach(x=>x.setAttribute("aria-pressed","false"));bt.setAttribute("aria-pressed","true");
   state.funnelCohort=bt.getAttribute("data-c");renderFunnelTable();});
-let st;$("#searchBox").addEventListener("input",e=>{state.search=e.target.value;clearTimeout(st);st=setTimeout(()=>{renderContrib();renderTable();renderTrend();renderVertTrend();renderFunnel();renderFunnelTable();renderKPIs();renderSplits();},180);});
+$("#liftDimSeg").addEventListener("click",e=>{const bt=e.target.closest("button");if(!bt)return;
+  [...$("#liftDimSeg").children].forEach(x=>x.setAttribute("aria-pressed","false"));bt.setAttribute("aria-pressed","true");
+  state.liftDim=bt.getAttribute("data-ld");renderLift();});
+$("#liftMetSeg").addEventListener("click",e=>{const bt=e.target.closest("button");if(!bt)return;
+  [...$("#liftMetSeg").children].forEach(x=>x.setAttribute("aria-pressed","false"));bt.setAttribute("aria-pressed","true");
+  state.liftMet=bt.getAttribute("data-lm");renderLift();});
+let st;$("#searchBox").addEventListener("input",e=>{state.search=e.target.value;clearTimeout(st);st=setTimeout(()=>{renderContrib();renderTable();renderTrend();renderVertTrend();renderFunnel();renderFunnelTable();renderLift();renderKPIs();renderSplits();},180);});
 const root=document.documentElement;
 function curDark(){const t=root.getAttribute("data-theme");if(t)return t==="dark";return mm("(prefers-color-scheme:dark)").matches;}
 $("#themeBtn").addEventListener("click",()=>{const d=!curDark();root.setAttribute("data-theme",d?"dark":"light");$("#themeIco").textContent=d?"\u263e":"\u2600";renderAll();});
 mm("(prefers-color-scheme:dark)").addEventListener("change",()=>{if(!root.getAttribute("data-theme"))renderAll();});
 function renderSplits(){renderSplit("#c_side",2,k=>SIDE_COLOR[k]||"var(--s-other)");renderSplit("#c_source",4,k=>k==="onflow"?"var(--accent)":"var(--s-other)");}
-function renderAll(){renderKPIs();renderTrend();renderVertTrend();renderFunnel();renderFunnelTable();renderContrib();renderSplits();renderTable();}
+function renderAll(){renderKPIs();renderTrend();renderVertTrend();renderFunnel();renderFunnelTable();renderLift();renderContrib();renderSplits();renderTable();}
 fillSelects();setupCustom();renderFoot();renderAll();
 let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{renderTrend();renderVertTrend();},150);});
 })();
