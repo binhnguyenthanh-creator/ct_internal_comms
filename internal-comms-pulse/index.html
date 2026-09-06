@@ -223,18 +223,7 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
   <div class="tbl-wrap" style="margin-top:16px"><table class="sum" id="bvTable"><thead></thead><tbody></tbody></table></div>
 
   <div class="section-h">Trend explorer <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&#8212; Growth (CRM) vs all Ch&#7907; T&#7889;t</span></div>
-  <div class="bk-controls">
-    <div class="ctl"><span class="ctl-label">Window</span>
-      <div class="seg" id="tsWinSeg">
-        <button data-r="7" type="button">7d</button><button data-r="14" type="button">14d</button>
-        <button data-r="30" type="button">30d</button><button data-r="90" type="button" aria-pressed="true">90d</button>
-        <button data-r="ytd" type="button">YTD 26</button><button data-r="2025" type="button">2025</button>
-        <button data-r="all" type="button">All</button>
-      </div>
-    </div>
-    <div class="spacer"></div>
-    <div class="range-note" id="tsWinNote"></div>
-  </div>
+  <div id="tsWinMount"></div>
   <div class="grid g-2">
     <div class="panel">
       <div class="p-head">
@@ -370,19 +359,23 @@ const fmtDateY=s=>parseD(s).toLocaleDateString("en-GB",{day:"numeric",month:"sho
 const ymLabel=ym=>{const[y,m]=ym.split("-");return new Date(Date.UTC(+y,+m-1,1)).toLocaleDateString("en-GB",{month:"short",year:"2-digit",timeZone:"UTC"});};
 const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-let state={plat:"all",vert:"all",range:"90",ts:"leads",tsRange:"90",bk:"leads",mtx:"mau",month:MONTHS[MONTHS.length-1],drillP:1,drillV:0,
+let state={plat:"all",vert:"all",range:"90",ts:"leads",bk:"leads",mtx:"mau",month:MONTHS[MONTHS.length-1],drillP:1,drillV:0,
   cStart:iso(new Date(maxDate.getTime()-29*864e5)),cEnd:iso(maxDate)};
 
 // ---- window ----
 const NDAYS={"3":3,"5":5,"7":7,"14":14,"30":30,"90":90};
-// rangeStart/rangeEnd/inWindow default to the GLOBAL window (state.range) but accept an
-// explicit range so a section can carry its own window (e.g. Trend explorer = state.tsRange).
-function rangeStart(r){r=r||state.range;if(r==="custom")return parseD(state.cStart);
+// A "window" = {range, cStart, cEnd}. winStart/winEnd/inWin operate on ANY window object; the
+// GLOBAL controls (rangeStart/rangeEnd/inWindow) wrap them with global state, and each
+// per-section control built by makeSectionWindow() carries its OWN window object.
+function winStart(w){const r=w.range;if(r==="custom")return parseD(w.cStart);
   if(NDAYS[r])return new Date(maxDate.getTime()-(NDAYS[r]-1)*864e5);
   if(r==="ytd")return new Date(Date.UTC(2026,0,1));if(r==="2025")return new Date(Date.UTC(2025,0,1));return minDate;}
-function rangeEnd(r){r=r||state.range;if(r==="custom")return parseD(state.cEnd);if(r==="2025")return new Date(Date.UTC(2025,11,31));return maxDate;}
-function inWindow(di,r){const t=parseD(DATES[di]);return t>=rangeStart(r)&&t<=rangeEnd(r);}
-function selDailyR(r){return DLY.filter(x=>inWindow(x[0],r)&&matchFilter(x));}
+function winEnd(w){const r=w.range;if(r==="custom")return parseD(w.cEnd);if(r==="2025")return new Date(Date.UTC(2025,11,31));return maxDate;}
+function inWin(di,w){const t=parseD(DATES[di]);return t>=winStart(w)&&t<=winEnd(w);}
+function gwin(r){return{range:r||state.range,cStart:state.cStart,cEnd:state.cEnd};}
+function rangeStart(r){return winStart(gwin(r));}
+function rangeEnd(r){return winEnd(gwin(r));}
+function inWindow(di,r){return inWin(di,gwin(r));}
 const pIdx=()=>state.plat==="all"?-1:PLAT.indexOf(state.plat);
 const vIdx=()=>state.vert==="all"?-1:VERT.indexOf(state.vert);
 const oneSlice=()=>pIdx()>=0&&vIdx()>=0;
@@ -633,7 +626,48 @@ function renderByVertical(){
   trows.forEach(r=>{const tr=el("tr");tr.innerHTML=`<td class="dim">${VLABEL[r.v]} <span style="opacity:.6">${r.v}</span></td><td class="num">${fmt(r.avgDau)}</td><td class="num">${fmt(r.avgDwl)}</td><td class="num">${pct(r.convD,1)}</td><td class="num">${r.mau?fmt(r.mau):"—"}</td><td class="num">${r.mauwl?fmt(r.mauwl):"—"}</td><td class="num">${r.mau?pct(r.convM,1):"—"}</td>`;tbody.appendChild(tr);});
 }
 
-// ---- trend explorer (Growth CRM vs all Ch\u1ee3 T\u1ed1t; own time window = state.tsRange) ----
+// ---- REUSABLE per-section time-window control -------------------------------------------
+// Renders preset buttons + a Custom date-range picker into `mount`, keeps its OWN window
+// {range,cStart,cEnd}, and calls opts.onChange() after any change. Use `.rows()` for DLY
+// filtered to this window AND the current platform/vertical scope, and `.renderNote()` to
+// refresh its date-span caption. This is the standard section filter \u2014 reuse it for any
+// section that needs its own time range (call once, keep the returned handle, read .rows()).
+const WIN_PRESETS=[["7","7d"],["14","14d"],["30","30d"],["90","90d"],["ytd","YTD 26"],["2025","2025"],["all","All"]];
+function makeSectionWindow(mount,opts){
+  opts=opts||{};
+  const w={range:opts.default||"90",
+    cStart:opts.cStart||iso(new Date(maxDate.getTime()-29*864e5)),
+    cEnd:opts.cEnd||iso(maxDate)};
+  const wrap=el("div","bk-controls");
+  const ctl=el("div","ctl");ctl.appendChild(el("span","ctl-label",opts.label||"Window"));
+  const seg=el("div","seg");
+  (opts.presets||WIN_PRESETS).concat([["custom","Custom"]]).forEach(([v,lab])=>{
+    const b=el("button",null,lab);b.type="button";b.setAttribute("data-r",v);
+    b.setAttribute("aria-pressed",v===w.range?"true":"false");seg.appendChild(b);});
+  ctl.appendChild(seg);wrap.appendChild(ctl);
+  const cr=el("div","custom-range");
+  cr.innerHTML=`<input type="date" class="dt"><span style="color:var(--muted)">\u2192</span><input type="date" class="dt">`;
+  if(w.range==="custom")cr.classList.add("on");
+  wrap.appendChild(cr);wrap.appendChild(el("div","spacer"));
+  const note=el("div","range-note");wrap.appendChild(note);
+  mount.innerHTML="";mount.appendChild(wrap);
+  const [ia,ib]=cr.querySelectorAll("input.dt");
+  ia.min=ib.min=DATES[0];ia.max=ib.max=DATES[DATES.length-1];ia.value=w.cStart;ib.value=w.cEnd;
+  function rows(){return DLY.filter(r=>inWin(r[0],w)&&matchFilter(r));}
+  function renderNote(){const ds=[...new Set(rows().map(r=>r[0]))].sort((x,y)=>x-y);
+    note.innerHTML=ds.length?`<b>${ds.length}</b> days \u00b7 <b>${fmtDateY(DATES[ds[0]])}</b> \u2192 <b>${fmtDateY(DATES[ds[ds.length-1]])}</b>`:"no data in range";}
+  seg.addEventListener("click",e=>{const btn=e.target.closest("button");if(!btn)return;
+    [...seg.children].forEach(x=>x.setAttribute("aria-pressed","false"));btn.setAttribute("aria-pressed","true");
+    w.range=btn.getAttribute("data-r");cr.classList.toggle("on",w.range==="custom");renderNote();opts.onChange&&opts.onChange();});
+  function updCustom(){if(ia.value&&ib.value&&ia.value<=ib.value){w.cStart=ia.value;w.cEnd=ib.value;w.range="custom";
+    [...seg.children].forEach(x=>x.setAttribute("aria-pressed",x.getAttribute("data-r")==="custom"?"true":"false"));
+    cr.classList.add("on");renderNote();opts.onChange&&opts.onChange();}}
+  ia.addEventListener("change",updCustom);ib.addEventListener("change",updCustom);
+  renderNote();
+  return{w,rows,renderNote};
+}
+
+// ---- trend explorer (Growth CRM vs all Ch\u1ee3 T\u1ed1t; carries its OWN window via makeSectionWindow) ----
 // crm(x)/tot(x) read the daily-aggregate: tot = the daumaulead all-channel `_total` column,
 // so the right panel is this channel's contribution (CRM \u00f7 all-channel) for the same metric.
 const TSMETA={
@@ -643,7 +677,7 @@ const TSMETA={
   conv:{lab:"Conversion",noun:"conversion",add:false,color:"var(--series-2)"}
 };
 function renderTrend(){
-  const cur=selDailyR(state.tsRange),s=dailyAgg(cur),n=s.length;const meta=TSMETA[state.ts];
+  const cur=tsWin.rows(),s=dailyAgg(cur),n=s.length;const meta=TSMETA[state.ts];
   const label=i=>fmtDate(DATES[s[i].di]),tip=i=>fmtDateY(DATES[s[i].di]),isConv=state.ts==="conv";
   // ---- left panel: the CRM metric over time (tooltip also shows all-Ch\u1ee3 T\u1ed1t + contribution) ----
   const crmVal=i=>isConv?(s[i].dau?s[i].dwl/s[i].dau:0):meta.crm(s[i]);
@@ -683,9 +717,7 @@ function renderTrend(){
       {n,xlabel:label,xtip:tip,xlabels:4,height:250,pctAxis:true,maxV:niceMax(Math.max(0.001,...shareVals)*1.15),
        extra:i=>`<div class="tt-row"><span class="l">CRM</span><span class="v">${fmt(meta.crm(s[i]))}</span></div><div class="tt-row"><span class="l">All Ch\u1ee3 T\u1ed1t</span><span class="v">${fmt(meta.tot(s[i]))}</span></div>`});
   }
-  // local window note
-  const ds=[...new Set(cur.map(r=>r[0]))].sort((a,b)=>a-b);
-  $("#tsWinNote").innerHTML=ds.length?`<b>${ds.length}</b> days \u00b7 <b>${fmtDateY(DATES[ds[0]])}</b> \u2192 <b>${fmtDateY(DATES[ds[ds.length-1]])}</b>`:"no data in range";
+  tsWin.renderNote();
 }
 
 // ---- breakdown (adaptive daily-area / monthly-bars, selectable metric) ----
@@ -897,7 +929,6 @@ segWire("#platSeg","data-v","plat",()=>renderScopeDeps());
 segWire("#vertSeg","data-v","vert",()=>renderScopeDeps());
 segWire("#rangeSeg","data-r","range",r=>{$("#customRange").classList.toggle("on",r==="custom");renderAll();});
 segWire("#tsSeg","data-m","ts",()=>renderTrend());
-segWire("#tsWinSeg","data-r","tsRange",()=>renderTrend()); // Trend explorer's OWN window
 segWire("#bkSeg","data-m","bk",()=>renderBreakdowns());
 segWire("#mtxSeg","data-m","mtx",()=>renderMatrix());
 function wireSeg(id,attr,fn){$(id).addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
@@ -912,6 +943,7 @@ $("#themeBtn").addEventListener("click",()=>{const dark=!currentDark();root.setA
 mm("(prefers-color-scheme:dark)").addEventListener("change",()=>{if(!root.getAttribute("data-theme"))renderAll();});
 
 function renderAll(){renderKPIs();renderByVertical();renderTrend();renderBreakdowns();renderPatterns();renderMatrix();renderDrill();renderTable();rangeLabel();}
+const tsWin=makeSectionWindow($("#tsWinMount"),{default:"90",onChange:renderTrend}); // Trend explorer's own window: presets + Custom
 fillMonthSelect();setupCustom();renderFoot();renderAll();renderSourceTable();
 let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(renderAll,150);});
 })();
