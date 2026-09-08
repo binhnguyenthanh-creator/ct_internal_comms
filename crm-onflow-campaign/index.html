@@ -16,19 +16,19 @@
   --plane:#f4f6f8;--surface:#ffffff;--surface-2:#fbfcfd;--ink:#101418;--ink-2:#4b5560;--muted:#8a94a0;
   --hair:#e6e9ee;--hair-strong:#d3d8df;--grid:#eef1f5;--accent:#2a78d6;--accent-soft:#eaf2fd;
   --good:#0ca30c;--good-ink:#0a7d20;--bad:#d03b3b;--bad-ink:#b7302f;--warn:#b7791f;--warn-soft:#fbf1de;
-  --sent:#2a78d6;--reach:#1baf7a;--open:#eda100;
+  --sent:#2a78d6;--reach:#1baf7a;--open:#eda100;--drate:#7c5cff;--orate:#d6337a;
   --shadow:0 1px 2px rgba(16,20,24,.04),0 8px 24px -12px rgba(16,20,24,.18);--radius:14px;}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
   --plane:#0c0e11;--surface:#16191d;--surface-2:#1b1f24;--ink:#f3f5f7;--ink-2:#b7c0cb;--muted:#7f8994;
   --hair:#262b31;--hair-strong:#333a42;--grid:#22272d;--accent:#3987e5;--accent-soft:#132538;
   --good:#0ca30c;--good-ink:#3ec24a;--bad:#e05555;--bad-ink:#f07070;--warn:#e0a53a;--warn-soft:#2a2213;
-  --sent:#3987e5;--reach:#199e70;--open:#c98500;
+  --sent:#3987e5;--reach:#199e70;--open:#c98500;--drate:#9b86ff;--orate:#e85a97;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);}}
 :root[data-theme="dark"]{color-scheme:dark;
   --plane:#0c0e11;--surface:#16191d;--surface-2:#1b1f24;--ink:#f3f5f7;--ink-2:#b7c0cb;--muted:#7f8994;
   --hair:#262b31;--hair-strong:#333a42;--grid:#22272d;--accent:#3987e5;--accent-soft:#132538;
   --good:#0ca30c;--good-ink:#3ec24a;--bad:#e05555;--bad-ink:#f07070;--warn:#e0a53a;--warn-soft:#2a2213;
-  --sent:#3987e5;--reach:#199e70;--open:#c98500;
+  --sent:#3987e5;--reach:#199e70;--open:#c98500;--drate:#9b86ff;--orate:#e85a97;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--plane);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -294,24 +294,37 @@ function dpillPct(now,was,full){ // delta for a rate metric (percentage points)
 }
 
 /* ---------- reusable chart ----------
-   opts: {holder, series:[{vals:[N], color, name}], windowSet:Set, pct:bool, height} */
+   opts: {holder, series:[{vals:[N], color, name, pct?}], windowSet:Set, pct:bool(default), height}
+   Each series may set its own `pct` flag; falls back to opts.pct. When counts and
+   percentages are mixed, counts use the LEFT axis and percentages a secondary RIGHT axis. */
 function drawChart(opts){
   const holder=opts.holder; holder.innerHTML=""; holder.style.position="relative";
-  const series=opts.series, isPct=!!opts.pct;
-  const W=holder.clientWidth||900,H=opts.height||210,m={t:12,r:14,b:24,l:isPct?42:46},iw=W-m.l-m.r,ih=H-m.t-m.b;
-  let maxV=0;series.forEach(s=>s.vals.forEach(v=>{if(v!=null&&isFinite(v)&&v>maxV)maxV=v;}));
-  if(isPct){maxV=Math.min(1,Math.max(maxV*1.15,0.02));}else{maxV=Math.max(1,maxV*1.08);}
-  const X=i=>N<=1?m.l+iw/2:m.l+i*iw/(N-1),Y=v=>m.t+ih-(Math.max(0,Math.min(v==null?0:v,maxV))/maxV)*ih;
+  const series=opts.series.map(s=>({...s,pct:(s.pct==null?!!opts.pct:!!s.pct)}));
+  const hasCount=series.some(s=>!s.pct), hasPct=series.some(s=>s.pct);
+  const dualAxis=hasCount&&hasPct, leftIsPct=!hasCount;
+  let maxCount=0,maxPct=0;
+  series.forEach(s=>s.vals.forEach(v=>{if(v!=null&&isFinite(v)){if(s.pct){if(v>maxPct)maxPct=v;}else if(v>maxCount)maxCount=v;}}));
+  maxCount=Math.max(1,maxCount*1.08);
+  maxPct=Math.min(1,Math.max(maxPct*1.15,0.02));
+  const leftMax=leftIsPct?maxPct:maxCount;
+  const W=holder.clientWidth||900,H=opts.height||210,m={t:12,r:dualAxis?46:14,b:24,l:leftIsPct?42:46},iw=W-m.l-m.r,ih=H-m.t-m.b;
+  const X=i=>N<=1?m.l+iw/2:m.l+i*iw/(N-1);
+  const Yleft=v=>m.t+ih-(Math.max(0,Math.min(v==null?0:v,leftMax))/leftMax)*ih;
+  const Yright=v=>m.t+ih-(Math.max(0,Math.min(v==null?0:v,maxPct))/maxPct)*ih;
+  const Yof=s=>(s.pct&&dualAxis)?Yright:Yleft;
   const svg=svgEl("svg",{viewBox:`0 0 ${W} ${H}`,width:"100%",height:H});svg.style.display="block";svg.style.overflow="visible";
-  for(let i=0;i<=4;i++){const gv=maxV*i/4,y=Y(gv);
+  for(let i=0;i<=4;i++){const y=m.t+ih-(i/4)*ih;
     svg.appendChild(svgEl("line",{class:"grid-line",x1:m.l,x2:m.l+iw,y1:y.toFixed(1),y2:y.toFixed(1),"stroke-width":1}));
-    const tx=svgEl("text",{x:m.l-8,y:(y+3.5).toFixed(1),"text-anchor":"end"});tx.textContent=isPct?(gv*100).toFixed(0)+"%":compact(gv);svg.appendChild(tx);}
+    const lv=leftMax*i/4;
+    const tx=svgEl("text",{x:m.l-8,y:(y+3.5).toFixed(1),"text-anchor":"end"});tx.textContent=leftIsPct?(lv*100).toFixed(0)+"%":compact(lv);svg.appendChild(tx);
+    if(dualAxis){const rv=maxPct*i/4;const rtx=svgEl("text",{x:m.l+iw+8,y:(y+3.5).toFixed(1),"text-anchor":"start"});rtx.textContent=(rv*100).toFixed(0)+"%";svg.appendChild(rtx);}}
   if(opts.windowSet&&opts.windowSet.size){const xs=[...opts.windowSet].sort((a,b)=>a-b),x0=X(xs[0])-2,x1=X(xs[xs.length-1])+2;
     svg.appendChild(svgEl("rect",{x:x0.toFixed(1),y:m.t,width:(x1-x0).toFixed(1),height:ih,fill:"var(--accent)","fill-opacity":".06"}));}
   const stepL=Math.max(1,Math.floor(N/8));
   for(let i=0;i<N;i+=stepL){const tx=svgEl("text",{x:X(i).toFixed(1),y:H-8,"text-anchor":"middle"});tx.textContent=fmtDate(DATES[i]);svg.appendChild(tx);}
   const single=series.length===1;
   series.forEach(s=>{
+    const Y=Yof(s);
     const pts=s.vals.map((v,i)=>[X(i),Y(v)]);
     if(single){
       let ap="M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L ")+` L ${X(N-1).toFixed(1)} ${Y(0)} L ${X(0).toFixed(1)} ${Y(0)} Z`;
@@ -327,8 +340,8 @@ function drawChart(opts){
   ov.addEventListener("mousemove",ev=>{const rect=svg.getBoundingClientRect();const px=(ev.clientX-rect.left)*(W/rect.width);
     let i=Math.round((px-m.l)/(iw/((N-1)||1)));i=Math.max(0,Math.min(N-1,i));const xx=X(i);
     focus.setAttribute("x1",xx);focus.setAttribute("x2",xx);focus.style.opacity="1";
-    let rows="";series.forEach((s,k)=>{const v=s.vals[i];dots[k].setAttribute("cx",xx);dots[k].setAttribute("cy",Y(v));dots[k].style.opacity=(v==null)?"0":"1";
-      rows+=`<div class="r"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:9px;height:3px;border-radius:2px;background:${s.color}"></span>${s.name}</span><b>${isPct?pct(v):fmt(v||0)}</b></div>`;});
+    let rows="";series.forEach((s,k)=>{const v=s.vals[i];const Y=Yof(s);dots[k].setAttribute("cx",xx);dots[k].setAttribute("cy",Y(v));dots[k].style.opacity=(v==null)?"0":"1";
+      rows+=`<div class="r"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:9px;height:3px;border-radius:2px;background:${s.color}"></span>${s.name}</span><b>${s.pct?pct(v):fmt(v||0)}</b></div>`;});
     tip.innerHTML=`<div class="d">${fmtDateW(DATES[i])}</div>${rows}`;tip.style.opacity="1";
     let tx=(xx/W)*rect.width+12;if(tx>rect.width-150)tx=(xx/W)*rect.width-tip.offsetWidth-12;tip.style.left=Math.max(4,tx)+"px";tip.style.top="4px";});
   ov.addEventListener("mouseleave",()=>{focus.style.opacity="0";tip.style.opacity="0";dots.forEach(d=>d.style.opacity="0");});
@@ -337,7 +350,7 @@ function drawChart(opts){
 
 /* ================= SECTION 1 · DELIVERY ================= */
 const del={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],
-  ch:new Set(),pf:new Set(),tt:new Set(),camp:"",metric:"sent",bk:"channel"};
+  ch:new Set(),pf:new Set(),tt:new Set(),camp:"",metrics:new Set(["sent"]),bk:"channel"};
 
 function delRowOk(r){
   if(del.ch.size&&!del.ch.has(r[1]))return false;
@@ -360,8 +373,8 @@ const DEL_MET={
   sent:{color:"var(--sent)",name:"Sent",pct:false},
   reach:{color:"var(--reach)",name:"Reach",pct:false},
   opens:{color:"var(--open)",name:"Direct open",pct:false},
-  deliv_rate:{color:"var(--reach)",name:"Deliver rate",pct:true},
-  open_rate:{color:"var(--open)",name:"Open rate",pct:true}
+  deliv_rate:{color:"var(--drate)",name:"Deliver rate",pct:true},
+  open_rate:{color:"var(--orate)",name:"Open rate",pct:true}
 };
 function renderDelKpis(){
   const {cur,prev}=winIdx(del),full=prev.length===cur.length&&prev.length>0;
@@ -380,17 +393,24 @@ function renderDelKpis(){
   const nCamp=(()=>{const s=new Set(),cs=new Set(cur);for(const r of DROWS){if(cs.has(r[0])&&delRowOk(r))s.add(r[4]);}return s.size;})();
   $("#dRangeNote").innerHTML=`<b>${cur.length}</b> days &middot; <b>${daysLabel(cur)}</b> &middot; <b>${nCamp}</b> campaigns`;
 }
+const DEL_MET_ORDER=["sent","reach","opens","deliv_rate","open_rate"];
+function delMetVals(m,pd){
+  if(m==="sent")return pd.sent;
+  if(m==="reach")return pd.reach;
+  if(m==="opens")return pd.opens;
+  if(m==="deliv_rate")return pd.sent.map((s,i)=>s?pd.reach[i]/s:null);
+  return pd.reach.map((rc,i)=>rc?pd.opens[i]/rc:null);
+}
 function renderDelTrend(){
-  const pd=delPerDay(),met=DEL_MET[del.metric];
-  let vals;
-  if(del.metric==="sent")vals=pd.sent;
-  else if(del.metric==="reach")vals=pd.reach;
-  else if(del.metric==="opens")vals=pd.opens;
-  else if(del.metric==="deliv_rate")vals=pd.sent.map((s,i)=>s?pd.reach[i]/s:null);
-  else vals=pd.reach.map((rc,i)=>rc?pd.opens[i]/rc:null);
-  $("#dTrendDesc").textContent=met.pct?`${met.name} theo ngày (%). Cửa sổ được tô nền.`:`${met.name} theo ngày. Cửa sổ được tô nền.`;
+  const pd=delPerDay();
+  const sel=DEL_MET_ORDER.filter(m=>del.metrics.has(m));
+  const series=sel.map(m=>{const met=DEL_MET[m];return{vals:delMetVals(m,pd),color:met.color,name:met.name,pct:met.pct};});
+  const hasCount=series.some(s=>!s.pct), hasPct=series.some(s=>s.pct);
+  const legend=series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;color:var(--ink-2);font-weight:500"><span style="width:12px;height:3px;border-radius:2px;background:${s.color};display:inline-block"></span>${s.name}${s.pct?" %":""}</span>`).join("");
+  const axisNote=(hasCount&&hasPct)?" &middot; trục trái = số lượng, trục phải = %":"";
+  $("#dTrendDesc").innerHTML=`<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 0">${legend}</span><span>Cửa sổ được tô nền${axisNote}.</span>`;
   const {cur}=winIdx(del);
-  drawChart({holder:$("#dTrend"),series:[{vals,color:met.color,name:met.name}],windowSet:new Set(cur),pct:met.pct,height:220});
+  drawChart({holder:$("#dTrend"),series,windowSet:new Set(cur),height:220});
 }
 function renderDelBk(){
   const {cur}=winIdx(del),cs=new Set(cur);
@@ -434,7 +454,10 @@ $("#dRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
   del.range=b.dataset.r;$("#dCustomRange").classList.toggle("on",del.range==="custom");renderDeliv();});
 $("#dMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
-  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");del.metric=b.dataset.m;renderDelTrend();});
+  const m=b.dataset.m,on=b.getAttribute("aria-pressed")==="true";
+  if(on){if(del.metrics.size<=1)return;del.metrics.delete(m);b.setAttribute("aria-pressed","false");}
+  else{del.metrics.add(m);b.setAttribute("aria-pressed","true");}
+  renderDelTrend();});
 $("#dBkSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");del.bk=b.dataset.b;renderDelBk();});
 $("#dcStart").value=del.cStart;$("#dcEnd").value=del.cEnd;
