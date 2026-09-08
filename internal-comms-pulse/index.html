@@ -140,6 +140,11 @@ table.sum td.dim{color:var(--muted)}
 .foot code{font-family:"IBM Plex Mono",monospace;background:var(--surface);border:1px solid var(--hair);padding:1px 6px;border-radius:5px;color:var(--ink-2);font-size:11.5px}
 .foot b{color:var(--ink-2)}
 select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;border:1px solid var(--hair-strong);background:var(--surface);color:var(--ink);cursor:pointer}
+.p-tools{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.exp-btn{border:1px solid var(--hair-strong);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:4px 9px;font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.exp-btn:hover{border-color:var(--accent);color:var(--accent)}
+.exp-btn:active{transform:translateY(.5px)}
+.tbl-tools{display:flex;justify-content:flex-end;margin:12px 0 6px}
 @media (max-width:900px){.kpis,.strip{grid-template-columns:repeat(2,1fr)}.g-2,.g-2b{grid-template-columns:1fr}}
 @media (max-width:560px){.wrap{padding:18px 14px 48px}h1{font-size:22px}.kpis,.strip{grid-template-columns:1fr 1fr}.kpi .k-val{font-size:23px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -199,28 +204,29 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
   <div class="section-h">By vertical <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&#8212; DAU &#183; DAU w/ lead &#183; MAU &#183; MAU w/ lead</span></div>
   <p class="section-sub" id="bv-sub"></p>
   <div class="bk-controls">
-    <div class="ctl"><span class="ctl-label">MAU month</span><select class="msel" id="bvMonthSel"></select></div>
-    <div class="range-note">DAU metrics use the selected <b>window</b> above &#183; MAU metrics use this <b>month</b>.</div>
+    <div class="ctl"><span class="ctl-label">Month</span><select class="msel" id="bvMonthSel"></select></div>
+    <div class="range-note">All four metrics are for the selected <b>month</b> &#183; DAU metrics = avg daily distinct, MAU = whole-month distinct.</div>
   </div>
   <div class="grid g-2b" id="bvGrid">
     <div class="panel">
-      <div class="p-head"><div><div class="p-title">DAU <span id="bv-tag-dau"></span></div><div class="p-desc">Avg daily reach in the window</div></div></div>
+      <div class="p-head"><div><div class="p-title">DAU <span id="bv-tag-dau"></span></div><div class="p-desc" id="bv-dau-desc">Avg daily reach in the month</div></div><button class="exp-btn" type="button" data-exp="bv_dau" title="T&#7843;i CSV">&#8681; CSV</button></div>
       <div class="chart-holder" id="bv_dau"></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title">DAU with lead <span id="bv-tag-dwl"></span></div><div class="p-desc">Avg daily users who submitted a lead</div></div></div>
+      <div class="p-head"><div><div class="p-title">DAU with lead <span id="bv-tag-dwl"></span></div><div class="p-desc" id="bv-dwl-desc">Avg daily users who submitted a lead</div></div><button class="exp-btn" type="button" data-exp="bv_dwl" title="T&#7843;i CSV">&#8681; CSV</button></div>
       <div class="chart-holder" id="bv_dwl"></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title">MAU <span id="bv-tag-mau"></span></div><div class="p-desc" id="bv-mau-desc">Monthly reach</div></div></div>
+      <div class="p-head"><div><div class="p-title">MAU <span id="bv-tag-mau"></span></div><div class="p-desc" id="bv-mau-desc">Monthly reach</div></div><button class="exp-btn" type="button" data-exp="bv_mau" title="T&#7843;i CSV">&#8681; CSV</button></div>
       <div class="chart-holder" id="bv_mau"></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title">MAU with lead <span id="bv-tag-mauwl"></span></div><div class="p-desc" id="bv-mauwl-desc">Monthly users with lead</div></div></div>
+      <div class="p-head"><div><div class="p-title">MAU with lead <span id="bv-tag-mauwl"></span></div><div class="p-desc" id="bv-mauwl-desc">Monthly users with lead</div></div><button class="exp-btn" type="button" data-exp="bv_mauwl" title="T&#7843;i CSV">&#8681; CSV</button></div>
       <div class="chart-holder" id="bv_mauwl"></div>
     </div>
   </div>
-  <div class="tbl-wrap" style="margin-top:16px"><table class="sum" id="bvTable"><thead></thead><tbody></tbody></table></div>
+  <div class="tbl-tools"><button class="exp-btn" type="button" data-exp="bvTable" title="T&#7843;i CSV">&#8681; CSV</button></div>
+  <div class="tbl-wrap"><table class="sum" id="bvTable"><thead></thead><tbody></tbody></table></div>
 
   <div class="section-h">Trend explorer <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&#8212; Growth (CRM) vs all Ch&#7907; T&#7889;t</span></div>
   <div id="tsWinMount"></div>
@@ -228,18 +234,21 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
     <div class="panel">
       <div class="p-head">
         <div><div class="p-title" id="ts-title">Daily leads from CRM</div><div class="p-desc" id="ts-desc"></div></div>
-        <div class="mini-seg" id="tsSeg">
-          <button data-m="leads" type="button" aria-pressed="true">Leads</button>
-          <button data-m="dau" type="button">DAU</button>
-          <button data-m="dwl" type="button">Users w/ lead</button>
-          <button data-m="conv" type="button">Conversion</button>
+        <div class="p-tools">
+          <div class="mini-seg" id="tsSeg">
+            <button data-m="leads" type="button" aria-pressed="true">Leads</button>
+            <button data-m="dau" type="button">DAU</button>
+            <button data-m="dwl" type="button">Users w/ lead</button>
+            <button data-m="conv" type="button">Conversion</button>
+          </div>
+          <button class="exp-btn" type="button" data-exp="c_ts" title="T&#7843;i CSV">&#8681; CSV</button>
         </div>
       </div>
       <div class="legend" style="margin:2px 0 4px"><span class="item"><span class="sw-line"></span> Daily</span><span class="item"><span class="sw-dash"></span> 7-day avg</span></div>
       <div class="chart-holder" id="c_ts"></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title" id="share-title">CRM share of all-channel leads</div><div class="p-desc" id="share-desc"></div></div><div class="legend" id="share-legend"></div></div>
+      <div class="p-head"><div><div class="p-title" id="share-title">CRM share of all-channel leads</div><div class="p-desc" id="share-desc"></div></div><div class="p-tools"><div class="legend" id="share-legend"></div><button class="exp-btn" type="button" data-exp="c_share" title="T&#7843;i CSV">&#8681; CSV</button></div></div>
       <div class="chart-holder" id="c_share"></div>
     </div>
   </div>
@@ -257,11 +266,11 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
   </div>
   <div class="grid g-2b">
     <div class="panel">
-      <div class="p-head"><div><div class="p-title" id="lv-title">DAU by vertical</div><div class="p-desc" id="lv-desc"></div></div><div class="legend" id="lv-legend"></div></div>
+      <div class="p-head"><div><div class="p-title" id="lv-title">DAU by vertical</div><div class="p-desc" id="lv-desc"></div></div><div class="p-tools"><div class="legend" id="lv-legend"></div><button class="exp-btn" type="button" data-exp="c_lvert" title="T&#7843;i CSV">&#8681; CSV</button></div></div>
       <div class="chart-holder" id="c_lvert"></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title" id="lp-title">DAU by platform</div><div class="p-desc" id="lp-desc"></div></div><div class="legend" id="lp-legend"></div></div>
+      <div class="p-head"><div><div class="p-title" id="lp-title">DAU by platform</div><div class="p-desc" id="lp-desc"></div></div><div class="p-tools"><div class="legend" id="lp-legend"></div><button class="exp-btn" type="button" data-exp="c_lplat" title="T&#7843;i CSV">&#8681; CSV</button></div></div>
       <div class="chart-holder" id="c_lplat"></div>
     </div>
   </div>
@@ -283,17 +292,18 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
   </div>
   <div class="grid g-2">
     <div class="panel">
-      <div class="p-head"><div><div class="p-title" id="mtx-title"></div><div class="p-desc" id="mtx-desc"></div></div></div>
+      <div class="p-head"><div><div class="p-title" id="mtx-title"></div><div class="p-desc" id="mtx-desc"></div></div><button class="exp-btn" type="button" data-exp="c_matrix" title="T&#7843;i CSV">&#8681; CSV</button></div>
       <div class="mtx" id="c_matrix"></div>
       <div class="scale"><span>low</span><div class="bar"></div><span id="scale-hi"></span></div>
     </div>
     <div class="panel">
-      <div class="p-head"><div><div class="p-title" id="drill-title">Slice drill-down</div><div class="p-desc" id="drill-desc"></div></div><div class="legend" id="drill-legend"></div></div>
+      <div class="p-head"><div><div class="p-title" id="drill-title">Slice drill-down</div><div class="p-desc" id="drill-desc"></div></div><div class="p-tools"><div class="legend" id="drill-legend"></div><button class="exp-btn" type="button" data-exp="c_drill" title="T&#7843;i CSV">&#8681; CSV</button></div></div>
       <div class="chart-holder" id="c_drill"></div>
     </div>
   </div>
 
   <div class="section-h">Monthly summary</div>
+  <div class="tbl-tools"><button class="exp-btn" type="button" data-exp="sumTable" title="T&#7843;i CSV">&#8681; CSV</button></div>
   <div class="tbl-wrap"><table class="sum" id="sumTable"><thead></thead><tbody></tbody></table></div>
 
   <div class="section-h">Source contribution <span style="text-transform:none;letter-spacing:0;font-weight:400;color:var(--muted)">&#8212; which sources &amp; surfaces drive Growth (CRM)</span></div>
@@ -321,6 +331,7 @@ select.msel{font:inherit;font-size:12.5px;padding:6px 10px;border-radius:8px;bor
     </div>
   </div>
   <p class="section-sub" id="sc-sub"></p>
+  <div class="tbl-tools"><button class="exp-btn" type="button" data-exp="scTable" title="T&#7843;i CSV">&#8681; CSV</button></div>
   <div class="tbl-wrap"><table class="sum" id="scTable"><thead></thead><tbody></tbody></table></div>
 
   <div class="foot" id="foot"></div>
@@ -354,6 +365,26 @@ const fmtDate=s=>parseD(s).toLocaleDateString("en-GB",{day:"numeric",month:"shor
 const fmtDateY=s=>parseD(s).toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric",timeZone:"UTC"});
 const ymLabel=ym=>{const[y,m]=ym.split("-");return new Date(Date.UTC(+y,+m-1,1)).toLocaleDateString("en-GB",{month:"short",year:"2-digit",timeZone:"UTC"});};
 const DOW=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+
+// ---- CSV export ---------------------------------------------------------------
+// Each render fn calls setExport(id, headers[], rows[[...]]) with its CURRENT data;
+// the per-chart "⬇ CSV" button reads the registry and downloads a UTF-8 CSV.
+const EXPORTS={};
+function setExport(id,headers,rows){EXPORTS[id]={headers,rows};}
+function csvCell(v){if(v==null)v="";v=String(v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+function downloadCSV(id){
+  const e=EXPORTS[id];if(!e){return;}
+  const lines=[e.headers.map(csvCell).join(",")];
+  e.rows.forEach(r=>lines.push(r.map(csvCell).join(",")));
+  const csv="﻿"+lines.join("\r\n"); // BOM so Excel reads UTF-8
+  const stamp=new Date().toISOString().slice(0,10);
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=`internal-comms_${id}_${stamp}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1500);
+}
+document.addEventListener("click",e=>{const b=e.target.closest(".exp-btn");if(b)downloadCSV(b.getAttribute("data-exp"));});
 
 let state={plat:"all",vert:"all",range:"90",ts:"leads",bk:"dau",mtx:"mau",month:MONTHS[MONTHS.length-1],drillP:1,drillV:0,
   cStart:iso(new Date(maxDate.getTime()-29*864e5)),cEnd:iso(maxDate)};
@@ -412,14 +443,22 @@ function capWinDates(w,T){
   return dis;
 }
 function funWinDates(w){return capWinDates(w,FUN_T);}
-function funWindow(){ // -> {dis:[di...], capped, nDays} intersected with FUN's 90-day span
-  if(!FUN_DATES.length)return{dis:[],capped:false,nDays:0};
+function funWindow(){ // -> {dis:[di...], capped, nDays, empty} intersected with FUN's real span
+  if(!FUN_DATES.length)return{dis:[],capped:false,nDays:0,empty:true};
   const funMin=FUN_T[0],funMax=FUN_T[FUN_MAXI];let startT,endT,capped=false;const r=state.range;
+  // Resolve the requested window to real calendar dates, THEN intersect with FUN's coverage.
+  // A window that reaches before the funnel's first day is flagged capped; one with no
+  // overlap at all (e.g. "2025", which predates the 90-day funnel) comes back empty so the
+  // scorecards can say so instead of silently repeating the trailing-90d numbers.
   if(NDAYS[r]){const nd=Math.min(NDAYS[r],FUN_DATES.length);startT=new Date(funMax.getTime()-(nd-1)*864e5);endT=funMax;if(NDAYS[r]>FUN_DATES.length)capped=true;}
-  else if(r==="custom"){startT=parseD(state.cStart);endT=parseD(state.cEnd);if(endT>funMax)endT=funMax;if(startT<funMin){startT=funMin;capped=true;}}
-  else{startT=funMin;endT=funMax;capped=true;} // ytd / 2025 / all -> trailing 90d
+  else if(r==="custom"){startT=parseD(state.cStart);endT=parseD(state.cEnd);}
+  else if(r==="ytd"){startT=new Date(Date.UTC(2026,0,1));endT=maxDate;capped=true;}
+  else if(r==="2025"){startT=new Date(Date.UTC(2025,0,1));endT=new Date(Date.UTC(2025,11,31));capped=true;}
+  else{startT=minDate;endT=maxDate;capped=true;} // all
+  if(startT<funMin){startT=funMin;if(r!=="90"&&NDAYS[r])capped=true;}
+  if(endT>funMax)endT=funMax;
   const dis=[];FUN_T.forEach((t,i)=>{if(t>=startT&&t<=endT)dis.push(i);});
-  return{dis,capped,nDays:dis.length};
+  return{dis,capped,nDays:dis.length,empty:dis.length===0};
 }
 function funAgg(disSet){
   const vk=state.vert==="all"?4:VERT.indexOf(state.vert),p=pIdx(),byd=new Map();
@@ -450,6 +489,7 @@ function renderFunNote(){
   const box=$("#fun-note");if(!box)return;
   if(!FUN_DLY.length){box.innerHTML=`<span class="tag-add warn" style="vertical-align:middle">no data</span> Adview funnel data is unavailable in this snapshot.`;return;}
   const w=funWindow(),slice=pIdx()>=0;
+  if(w.empty){box.innerHTML=`<span class="tag-add warn" style="vertical-align:middle">outside range</span> The <b>adview funnel</b> only covers the trailing <b>${FUN.n_days} days</b> (${FUN.d_start} → ${FUN.d_end}). The selected window (<b>${rangeLabelText()}</b>) falls outside it, so the funnel scorecards are hidden — pick a window within the last ${FUN.n_days} days to see them. The sections below still reflect the selected window.`;return;}
   const scope=`${state.plat==="all"?"all platforms":state.plat} \u00b7 ${state.vert==="all"?"all verticals":state.vert}`;
   let s=`<b>CRM adview funnel</b> \u2014 distinct users reached by Growth (CRM), then who <b>viewed an ad</b>, then who <b>submitted a lead</b>. Scope <b>${scope}</b>. `;
   s+=slice?`Exact distinct counts for this platform. `:`<span class="tag-add warn" style="vertical-align:middle">\u03a3 not de-dup</span> platforms are summed \u2014 pick one platform for exact counts. `;
@@ -467,10 +507,12 @@ function sparkline(vals){const w=200,h=30,pad=3;if(vals.length<2)return "";
   return `<svg class="spark" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true"><path d="${ap}" fill="var(--accent)" opacity=".10"/><path d="${dp.trim()}" fill="none" stroke="var(--accent)" stroke-width="1.7" stroke-linejoin="round" stroke-linecap="round"/></svg>`;}
 function renderKPIs(){const box=$("#kpis");box.innerHTML="";
   if(!FUN_DLY.length){box.style.display="none";renderFunNote();return;}
+  if(funWindow().empty){box.style.display="none";renderFunNote();return;} // window outside the 90d funnel span
   box.style.display="";const ks=computeKPIs();
   ks.forEach(k=>{const c=el("div","kpi");c.innerHTML=`<div class="k-top"><span class="k-name">${k.name}</span>${deltaHTML(k)}</div>
     <div style="display:flex;align-items:baseline;gap:7px"><span class="k-val">${k.val}</span><span class="tag-add ${k.tag}">${k.tagLabel}</span></div>
     ${sparkline(k.spark)}<div class="k-foot">${k.foot}</div>`;box.appendChild(c);});
+  setExport("kpis",["Metric","Value","Note"],ks.map(k=>[k.name,k.val,k.foot]));
   renderFunNote();}
 
 // ---- distinct strip ----
@@ -609,10 +651,12 @@ function renderByVertical(){
   const p=pIdx(),slice=p>=0; // exact only when a single platform is selected
   const tag=slice?'<span class="tag-add exact">exact</span>':'<span class="tag-add warn">Σ not de-dup</span>';
   ["dau","dwl","mau","mauwl"].forEach(k=>{const e=$("#bv-tag-"+k);if(e)e.innerHTML=tag;});
-  const mi=MONTHS.indexOf(state.month);
+  const ym=state.month,mi=MONTHS.indexOf(ym),mlab=ymLabel(ym);
   const dauItems=[],dwlItems=[],mauItems=[],mauwlItems=[],trows=[];
   VERT.forEach((v,vi)=>{
-    const rows=DLY.filter(r=>r[2]===vi&&inWindow(r[0])&&(p<0||r[1]===p));
+    // Whole section is driven by the selected MONTH: DAU/DAU-w-lead = avg daily distinct
+    // within that month; MAU/MAU-w-lead = the month's whole-month distinct.
+    const rows=DLY.filter(r=>r[2]===vi&&DATES[r[0]].slice(0,7)===ym&&(p<0||r[1]===p));
     const days=new Set(rows.map(r=>r[0])).size||1;
     const avgDau=sum(rows,r=>r[3])/days,avgDwl=sum(rows,r=>r[6])/days,convD=avgDau?avgDwl/avgDau:0;
     const mrows=MON.filter(r=>r[0]===mi&&r[2]===vi&&(p<0||r[1]===p));
@@ -624,15 +668,23 @@ function renderByVertical(){
     trows.push({v,avgDau,avgDwl,convD,mau,mauwl,convM});
   });
   vbars("bv_dau",dauItems);vbars("bv_dwl",dwlItems);vbars("bv_mau",mauItems);vbars("bv_mauwl",mauwlItems);
-  $("#bv-mau-desc").textContent="Monthly reach · "+ymLabel(state.month);
-  $("#bv-mauwl-desc").textContent="Monthly users with lead · "+ymLabel(state.month);
+  $("#bv-dau-desc").textContent="Avg daily reach · "+mlab;
+  $("#bv-dwl-desc").textContent="Avg daily users w/ lead · "+mlab;
+  $("#bv-mau-desc").textContent="Monthly reach · "+mlab;
+  $("#bv-mauwl-desc").textContent="Monthly users with lead · "+mlab;
   const scopeTxt=slice?`<b style="color:var(--ink-2)">${state.plat}</b> platform — exact distinct users`
     :`all platforms, summed across platform (<span class="tag-add warn" style="vertical-align:middle">Σ not de-dup</span> — over-counts users active on more than one platform)`;
-  $("#bv-sub").innerHTML=`<b>DAU</b> &amp; <b>DAU-with-lead</b> are <b>avg daily</b> over the selected window; <b>MAU</b> &amp; <b>MAU-with-lead</b> are for <b>${ymLabel(state.month)}</b>. Scope: ${scopeTxt}. Pick a single platform above for exact per-vertical distinct counts.`;
+  $("#bv-sub").innerHTML=`All four metrics are for <b>${mlab}</b>: <b>DAU</b> &amp; <b>DAU-with-lead</b> are <b>avg daily</b> distinct within the month; <b>MAU</b> &amp; <b>MAU-with-lead</b> are whole-month distinct. Scope: ${scopeTxt}. Pick a single platform above for exact per-vertical distinct counts.`;
   const thead=$("#bvTable thead"),tbody=$("#bvTable tbody");
   thead.innerHTML=`<tr><th>Vertical</th><th>Avg DAU</th><th>Avg DAU w/ lead</th><th>DAU conv.</th><th>MAU</th><th>MAU w/ lead</th><th>MAU conv.</th></tr>`;
   tbody.innerHTML="";
   trows.forEach(r=>{const tr=el("tr");tr.innerHTML=`<td class="dim">${VLABEL[r.v]} <span style="opacity:.6">${r.v}</span></td><td class="num">${fmt(r.avgDau)}</td><td class="num">${fmt(r.avgDwl)}</td><td class="num">${pct(r.convD,1)}</td><td class="num">${r.mau?fmt(r.mau):"—"}</td><td class="num">${r.mauwl?fmt(r.mauwl):"—"}</td><td class="num">${r.mau?pct(r.convM,1):"—"}</td>`;tbody.appendChild(tr);});
+  setExport("bv_dau",["Vertical","Month","Avg daily DAU"],trows.map(r=>[r.v,ym,Math.round(r.avgDau)]));
+  setExport("bv_dwl",["Vertical","Month","Avg daily DAU w/ lead","DAU conversion %"],trows.map(r=>[r.v,ym,Math.round(r.avgDwl),(r.convD*100).toFixed(2)]));
+  setExport("bv_mau",["Vertical","Month","MAU"],trows.map(r=>[r.v,ym,r.mau||0]));
+  setExport("bv_mauwl",["Vertical","Month","MAU w/ lead","MAU conversion %"],trows.map(r=>[r.v,ym,r.mauwl||0,(r.convM*100).toFixed(2)]));
+  setExport("bvTable",["Vertical","Month","Avg DAU","Avg DAU w/ lead","DAU conv %","MAU","MAU w/ lead","MAU conv %"],
+    trows.map(r=>[r.v,ym,Math.round(r.avgDau),Math.round(r.avgDwl),(r.convD*100).toFixed(2),r.mau||0,r.mauwl||0,r.mau?(r.convM*100).toFixed(2):""]));
 }
 
 // ---- REUSABLE per-section time-window control -------------------------------------------
@@ -730,6 +782,18 @@ function renderTrend(){
       {n,xlabel:label,xtip:tip,xlabels:4,height:250,pctAxis:true,maxV:niceMax(Math.max(0.001,...shareVals)*1.15),
        extra:i=>`<div class="tt-row"><span class="l">CRM</span><span class="v">${fmt(meta.crm(s[i]))}</span></div><div class="tt-row"><span class="l">All Ch\u1ee3 T\u1ed1t</span><span class="v">${fmt(meta.tot(s[i]))}</span></div>`});
   }
+  // ---- CSV exports for both panels ----
+  if(isConv){
+    setExport("c_ts",["Date","CRM conversion %","7-day avg %","All Ch\u1ee3 T\u1ed1t conversion %"],
+      s.map((x,i)=>[DATES[x.di],(crmVal(i)*100).toFixed(3),(ma[i]*100).toFixed(3),((x.dau_tot?x.dwl_tot/x.dau_tot:0)*100).toFixed(3)]));
+    setExport("c_share",["Date","CRM conversion %","All Ch\u1ee3 T\u1ed1t conversion %"],
+      s.map(x=>[DATES[x.di],((x.dau?x.dwl/x.dau:0)*100).toFixed(3),((x.dau_tot?x.dwl_tot/x.dau_tot:0)*100).toFixed(3)]));
+  }else{
+    setExport("c_ts",["Date","CRM "+meta.noun,"7-day avg","All Ch\u1ee3 T\u1ed1t "+meta.noun,"CRM contribution %"],
+      s.map((x,i)=>{const t=meta.tot(x);return[DATES[x.di],Math.round(arr[i]),Math.round(ma[i]),Math.round(t),((t?meta.crm(x)/t:0)*100).toFixed(3)];}));
+    setExport("c_share",["Date","CRM "+meta.noun,"All Ch\u1ee3 T\u1ed1t "+meta.noun,"CRM share %"],
+      s.map(x=>{const t=meta.tot(x);return[DATES[x.di],Math.round(meta.crm(x)),Math.round(t),((t?meta.crm(x)/t:0)*100).toFixed(3)];}));
+  }
   tsWin.renderNote();
 }
 
@@ -784,6 +848,8 @@ function renderBreakdowns(){
   $("#lp-desc").innerHTML=breakdownDesc(lp.mode,"plat");
   stackedChart("c_lplat",lp.rows,PLAT,k=>k,{area:lp.mode==="area"});
   $("#bk-subh").innerHTML="\u2014 distinct users (adview funnel) from traffic_visit_detail, trailing 90d";
+  setExport("c_lvert",["Period",...VERT.map(v=>VLABEL[v]+" "+m.lab)],lv.rows.map(o=>[o.full||o.lab,...VERT.map((k,ki)=>o[ki]||0)]));
+  setExport("c_lplat",["Period",...PLAT.map(pp=>pp+" "+m.lab)],lp.rows.map(o=>[o.full||o.lab,...PLAT.map((k,ki)=>o[ki]||0)]));
   bkWin.renderNote();
 }
 
@@ -824,12 +890,16 @@ function renderMatrix(){
     table.appendChild(tr);});
   const holder=$("#c_matrix");holder.innerHTML="";holder.appendChild(table);
   $("#scale-hi").textContent=(isPctMetric?pct(maxV,0):compact(maxV))+" max";
+  setExport("c_matrix",["Platform","Vertical",titles[metric]+(isPctMetric?" %":"")],
+    cells.filter(c=>c.val!=null&&!(c.days===0&&!monthly)).map(c=>[PLAT[c.pi],VERT[c.vi],isPctMetric?(c.val*100).toFixed(2):Math.round(c.val)]));
 }
 
 // ---- drill ----
 function renderDrill(){
   const pi=state.drillP,vi=state.drillV;
   const rows=DLY.filter(r=>r[1]===pi&&r[2]===vi&&inWindow(r[0])).sort((a,b)=>a[0]-b[0]);
+  setExport("c_drill",["Date","Platform","Vertical","DAU","New","Returning","Users w/ lead","Leads","Conversion %"],
+    rows.map(r=>[DATES[r[0]],PLAT[pi],VERT[vi],r[3],r[4],r[5],r[6],r[7],(r[3]?r[6]/r[3]*100:0).toFixed(2)]));
   $("#drill-title").innerHTML=`Drill-down \u00b7 <span class="chip">${PLAT[pi]} \u00d7 ${VERT[vi]}</span>`;
   $("#drill-legend").innerHTML=`<span class="item"><span class="sw sw1"></span>Returning</span><span class="item"><span class="sw sw4"></span>New</span>`;
   if(rows.length<2){$("#c_drill").innerHTML='<div class="drill-prompt">Not enough data for <b>'+PLAT[pi]+' \u00d7 '+VERT[vi]+'</b> in this window.</div>';$("#drill-desc").textContent="";return;}
@@ -851,15 +921,19 @@ function renderTable(){
   const thead=$("#sumTable thead"),tbody=$("#sumTable tbody");
   thead.innerHTML=`<tr><th>Month</th><th>Leads</th><th>Share all</th><th>Avg conv.</th>`+(slice?`<th>MAU</th><th>MAU w/ lead</th><th>Avg DAU</th>`:`<th>DAU/day (\u03a3)</th>`)+`</tr>`;
   tbody.innerHTML="";
+  const expRows=[];
   months.forEach(ym=>{const mi=MONTHS.indexOf(ym);
     const dr=DLY.filter(r=>DATES[r[0]].slice(0,7)===ym&&matchFilter(r));
     const leads=sum(dr,r=>r[7]),lt=sum(dr,r=>r[9]),dau=sum(dr,r=>r[3]),dwl=sum(dr,r=>r[6]);
     const nd=new Set(dr.map(r=>r[0])).size||1;
     let extra;
-    if(slice){const c=monthCell(mi,pIdx(),vIdx());extra=`<td class="num">${c?fmt(c[3]):"\u2014"}</td><td class="num">${c?fmt(c[4]):"\u2014"}</td><td class="num">${compact(dau/nd)}</td>`;}
-    else extra=`<td class="num" style="color:var(--muted)">${compact(dau/nd)}</td>`;
+    if(slice){const c=monthCell(mi,pIdx(),vIdx());extra=`<td class="num">${c?fmt(c[3]):"\u2014"}</td><td class="num">${c?fmt(c[4]):"\u2014"}</td><td class="num">${compact(dau/nd)}</td>`;
+      expRows.push([ym,leads,(lt?leads/lt*100:0).toFixed(2),(dau?dwl/dau*100:0).toFixed(2),c?c[3]:"",c?c[4]:"",Math.round(dau/nd)]);}
+    else{extra=`<td class="num" style="color:var(--muted)">${compact(dau/nd)}</td>`;
+      expRows.push([ym,leads,(lt?leads/lt*100:0).toFixed(2),(dau?dwl/dau*100:0).toFixed(2),Math.round(dau/nd)]);}
     const tr=el("tr");tr.innerHTML=`<td class="dim">${ymLabel(ym)}</td><td class="num">${fmt(leads)}</td><td class="num">${pct(lt?leads/lt:0,1)}</td><td class="num">${pct(dau?dwl/dau:0,1)}</td>${extra}`;
     tbody.appendChild(tr);});
+  setExport("sumTable",slice?["Month","Leads","Share all %","Avg conv %","MAU","MAU w/ lead","Avg DAU/day"]:["Month","Leads","Share all %","Avg conv %","DAU/day (sum)"],expRows);
 }
 
 // ---- source contribution (separate DAILY 90d pull; traffic_visit_detail ∩ traffic_lead_detail) ----
@@ -905,6 +979,9 @@ function renderSourceTable(){
       +`<div style="position:absolute;top:3px;bottom:3px;left:0;width:${w.toFixed(1)}%;background:color-mix(in srgb,${color} 20%,transparent);border-radius:5px"></div>`
       +`<span style="position:relative;font-weight:600">${fmt(r.val)}</span><span style="position:relative;color:var(--muted);font-weight:400"> · ${pct(share,1)}</span></td>`;
     tbody.appendChild(tr);});
+  setExport("scTable",bySrc?["Source","Vertical",m.lab,"Share %"]:["Source","Sub-channel","Vertical",m.lab,"Share %"],
+    rows.map(r=>{const src=SRC_LABEL[SRC_SRCS[r.si]]||SRC_SRCS[r.si],share=tot?(r.val/tot*100).toFixed(2):"0";
+      return bySrc?[src,scState.vert,Math.round(r.val),share]:[src,SRC_SUBS[r.ci],scState.vert,Math.round(r.val),share];}));
   const tr=el("tr");tr.style.borderTop="2px solid var(--hair-strong)";
   tr.innerHTML=`<td class="dim" style="font-weight:700">Total</td>${bySrc?"":`<td class="dim">${rows.length} rows</td>`}<td class="num" style="text-align:left;font-weight:700">${fmt(tot)} ${m.add?'':'<span class="tag-add warn" style="vertical-align:middle">Σ not de-dup</span>'}</td>`;
   tbody.appendChild(tr);
