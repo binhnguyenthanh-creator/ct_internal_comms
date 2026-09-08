@@ -16,19 +16,19 @@
   --plane:#f4f6f8;--surface:#ffffff;--surface-2:#fbfcfd;--ink:#101418;--ink-2:#4b5560;--muted:#8a94a0;
   --hair:#e6e9ee;--hair-strong:#d3d8df;--grid:#eef1f5;--accent:#2a78d6;--accent-soft:#eaf2fd;
   --good:#0ca30c;--good-ink:#0a7d20;--bad:#d03b3b;--bad-ink:#b7302f;--warn:#b7791f;--warn-soft:#fbf1de;
-  --sent:#2a78d6;--reach:#1baf7a;--open:#eda100;--drate:#7c5cff;--orate:#d6337a;
+  --sent:#2a78d6;--reach:#1baf7a;--open:#eda100;--drate:#7c5cff;--orate:#d6337a;--teal:#0f9bb0;--terra:#e2683c;
   --shadow:0 1px 2px rgba(16,20,24,.04),0 8px 24px -12px rgba(16,20,24,.18);--radius:14px;}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
   --plane:#0c0e11;--surface:#16191d;--surface-2:#1b1f24;--ink:#f3f5f7;--ink-2:#b7c0cb;--muted:#7f8994;
   --hair:#262b31;--hair-strong:#333a42;--grid:#22272d;--accent:#3987e5;--accent-soft:#132538;
   --good:#0ca30c;--good-ink:#3ec24a;--bad:#e05555;--bad-ink:#f07070;--warn:#e0a53a;--warn-soft:#2a2213;
-  --sent:#3987e5;--reach:#199e70;--open:#c98500;--drate:#9b86ff;--orate:#e85a97;
+  --sent:#3987e5;--reach:#199e70;--open:#c98500;--drate:#9b86ff;--orate:#e85a97;--teal:#28b4c9;--terra:#f0805a;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);}}
 :root[data-theme="dark"]{color-scheme:dark;
   --plane:#0c0e11;--surface:#16191d;--surface-2:#1b1f24;--ink:#f3f5f7;--ink-2:#b7c0cb;--muted:#7f8994;
   --hair:#262b31;--hair-strong:#333a42;--grid:#22272d;--accent:#3987e5;--accent-soft:#132538;
   --good:#0ca30c;--good-ink:#3ec24a;--bad:#e05555;--bad-ink:#f07070;--warn:#e0a53a;--warn-soft:#2a2213;
-  --sent:#3987e5;--reach:#199e70;--open:#c98500;--drate:#9b86ff;--orate:#e85a97;
+  --sent:#3987e5;--reach:#199e70;--open:#c98500;--drate:#9b86ff;--orate:#e85a97;--teal:#28b4c9;--terra:#f0805a;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -14px rgba(0,0,0,.7);}
 *{box-sizing:border-box}html,body{margin:0}
 body{background:var(--plane);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
@@ -465,9 +465,9 @@ $("#dcStart").addEventListener("change",e=>{del.cStart=e.target.value;if(del.ran
 $("#dcEnd").addEventListener("change",e=>{del.cEnd=e.target.value;if(del.range==="custom")renderDeliv();});
 
 /* ================= SECTION 2 · PERFORMANCE ================= */
-const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],vert:"all",camp:"",metric:"dau",sort:"dau",dir:-1};
+const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),camp:"",metrics:new Set(["dau"]),sort:"dau",dir:-1};
 function perfCampOk(ci){const c=CAMPS[ci];
-  if(perf.vert!=="all"&&c[1]!==perf.vert)return false;
+  if(perf.verts.size&&!perf.verts.has(c[1]))return false;
   if(perf.camp&&!c[0].toLowerCase().includes(perf.camp.toLowerCase()))return false;
   return true;}
 function perfPerDay(){
@@ -482,12 +482,12 @@ function perfSum(idxArr){
 }
 const PERF_MET={
   dau:{color:"var(--sent)",name:"DAU",pct:false},
-  dva:{color:"var(--accent)",name:"DAU w/ adview",pct:false},
+  dva:{color:"var(--teal)",name:"DAU w/ adview",pct:false},
   dsave:{color:"var(--open)",name:"DAU w/ save-ad",pct:false},
   dlead:{color:"var(--reach)",name:"DAU w/ lead",pct:false},
-  cr_adview:{color:"var(--accent)",name:"CR adview",pct:true,num:"dva"},
-  cr_save:{color:"var(--open)",name:"CR save",pct:true,num:"dsave"},
-  cr_lead:{color:"var(--reach)",name:"CR lead",pct:true,num:"dlead"}
+  cr_adview:{color:"var(--drate)",name:"CR adview",pct:true,num:"dva"},
+  cr_save:{color:"var(--orate)",name:"CR save",pct:true,num:"dsave"},
+  cr_lead:{color:"var(--terra)",name:"CR lead",pct:true,num:"dlead"}
 };
 function renderPerfKpis(){
   const {cur,prev}=winIdx(perf),full=prev.length===cur.length&&prev.length>0;
@@ -506,14 +506,22 @@ function renderPerfKpis(){
     k.innerHTML=`<div class="k-name"><span>${cd.n}</span></div><div class="k-val">${cd.v}</div><div class="k-rate">${cd.rate}</div>${cd.pill}<div class="k-foot">${daysLabel(cur)}</div>`;
     box.appendChild(k);});
 }
+const PERF_MET_ORDER=["dau","dva","dsave","dlead","cr_adview","cr_save","cr_lead"];
+function perfMetVals(m,pd){
+  const met=PERF_MET[m];
+  if(!met.pct)return pd[m];
+  return pd.dau.map((d,i)=>d?pd[met.num][i]/d:null);
+}
 function renderPerfTrend(){
-  const pd=perfPerDay(),met=PERF_MET[perf.metric];
-  let vals;
-  if(!met.pct)vals=pd[perf.metric];
-  else vals=pd.dau.map((d,i)=>d?pd[met.num][i]/d:null);
-  $("#pTrendDesc").textContent=met.pct?`${met.name} theo ngày (= DAU w/ ${met.name.replace("CR ","")} / DAU).`:`${met.name} theo ngày (distinct/ngày).`;
+  const pd=perfPerDay();
+  const sel=PERF_MET_ORDER.filter(m=>perf.metrics.has(m));
+  const series=sel.map(m=>{const met=PERF_MET[m];return{vals:perfMetVals(m,pd),color:met.color,name:met.name,pct:met.pct};});
+  const hasCount=series.some(s=>!s.pct), hasPct=series.some(s=>s.pct);
+  const legend=series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;color:var(--ink-2);font-weight:500"><span style="width:12px;height:3px;border-radius:2px;background:${s.color};display:inline-block"></span>${s.name}${s.pct?" %":""}</span>`).join("");
+  const axisNote=(hasCount&&hasPct)?" &middot; trục trái = distinct/ngày, trục phải = %":"";
+  $("#pTrendDesc").innerHTML=`<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 0">${legend}</span><span>Cửa sổ được tô nền${axisNote}.</span>`;
   const {cur}=winIdx(perf);
-  drawChart({holder:$("#pTrend"),series:[{vals,color:met.color,name:met.name}],windowSet:new Set(cur),pct:met.pct,height:220});
+  drawChart({holder:$("#pTrend"),series,windowSet:new Set(cur),height:220});
 }
 function renderPerfTbl(){
   const {cur}=winIdx(perf),cs=new Set(cur);
@@ -547,10 +555,18 @@ function renderPerf(){renderPerfKpis();renderPerfTrend();renderPerfTbl();}
 $("#pRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
   perf.range=b.dataset.r;$("#pCustomRange").classList.toggle("on",perf.range==="custom");renderPerf();});
+function syncPVert(){[...$("#pVertSeg").querySelectorAll("button")].forEach(x=>{const v=x.dataset.v;
+  x.setAttribute("aria-pressed", v==="all"?(perf.verts.size===0?"true":"false"):(perf.verts.has(v)?"true":"false"));});}
 $("#pVertSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
-  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");perf.vert=b.dataset.v;renderPerf();});
+  const v=b.dataset.v;
+  if(v==="all")perf.verts.clear();
+  else{if(perf.verts.has(v))perf.verts.delete(v);else perf.verts.add(v);}
+  syncPVert();renderPerf();});
 $("#pMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
-  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");perf.metric=b.dataset.m;renderPerfTrend();});
+  const m=b.dataset.m,on=b.getAttribute("aria-pressed")==="true";
+  if(on){if(perf.metrics.size<=1)return;perf.metrics.delete(m);b.setAttribute("aria-pressed","false");}
+  else{perf.metrics.add(m);b.setAttribute("aria-pressed","true");}
+  renderPerfTrend();});
 $("#pCampInput").addEventListener("input",e=>{perf.camp=e.target.value.trim();renderPerf();});
 $("#pcStart").value=perf.cStart;$("#pcEnd").value=perf.cEnd;
 $("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.range==="custom")renderPerf();});
