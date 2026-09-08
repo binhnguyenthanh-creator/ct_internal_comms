@@ -331,7 +331,7 @@ function drawChart(opts){
       const fe=svgEl("path",{d:ap});fe.style.fill=s.color;fe.style.opacity=".08";svg.appendChild(fe);
     }
     const lp="M"+pts.map(p=>p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" L ");
-    const le=svgEl("path",{d:lp,fill:"none"});le.style.stroke=s.color;le.style.strokeWidth=2;le.style.strokeLinejoin="round";le.style.strokeLinecap="round";svg.appendChild(le);
+    const le=svgEl("path",{d:lp,fill:"none"});le.style.stroke=s.color;le.style.strokeWidth=2;le.style.strokeLinejoin="round";le.style.strokeLinecap="round";if(s.dash)le.style.strokeDasharray=s.dash;svg.appendChild(le);
   });
   const dots=series.map(s=>{const c=svgEl("circle",{r:3.4,fill:"var(--surface)","stroke-width":2});c.style.stroke=s.color;c.style.opacity="0";svg.appendChild(c);return c;});
   const focus=svgEl("line",{y1:m.t,y2:m.t+ih,stroke:"var(--hair-strong)","stroke-width":1});focus.style.opacity="0";svg.appendChild(focus);
@@ -507,19 +507,50 @@ function renderPerfKpis(){
     box.appendChild(k);});
 }
 const PERF_MET_ORDER=["dau","dva","dsave","dlead","cr_adview","cr_save","cr_lead"];
+const PERF_VERT_ORDER=["gds","veh","pty","jobs","other"];
+const VERT_COLORS={gds:"var(--sent)",veh:"var(--reach)",pty:"var(--open)",jobs:"var(--drate)",other:"var(--orate)"};
+const DASHES=["","6 4","2 3","8 3 2 3","1 4"];
 function perfMetVals(m,pd){
   const met=PERF_MET[m];
   if(!met.pct)return pd[m];
   return pd.dau.map((d,i)=>d?pd[met.num][i]/d:null);
 }
+// per-day sums for ONE vertical (vert=null → all verticals); campaign-name filter still applies
+function perfPerDayFor(vert){
+  const dau=new Array(N).fill(0),dva=new Array(N).fill(0),dsave=new Array(N).fill(0),dlead=new Array(N).fill(0);
+  const cf=perf.camp?perf.camp.toLowerCase():"";
+  for(const r of PD){const c=CAMPS[r[1]];
+    if(vert!==null&&c[1]!==vert)continue;
+    if(cf&&!c[0].toLowerCase().includes(cf))continue;
+    dau[r[0]]+=r[2];dva[r[0]]+=r[3];dsave[r[0]]+=r[10];dlead[r[0]]+=r[8];}
+  return{dau,dva,dsave,dlead};
+}
 function renderPerfTrend(){
-  const pd=perfPerDay();
-  const sel=PERF_MET_ORDER.filter(m=>perf.metrics.has(m));
-  const series=sel.map(m=>{const met=PERF_MET[m];return{vals:perfMetVals(m,pd),color:met.color,name:met.name,pct:met.pct};});
+  const mets=PERF_MET_ORDER.filter(m=>perf.metrics.has(m));
+  // one line per selected vertical; if none selected → a single "all verticals" line
+  const vgroups=perf.verts.size?PERF_VERT_ORDER.filter(v=>perf.verts.has(v)):[null];
+  const multiMet=mets.length>1, multiVert=vgroups.length>1;
+  const pdBy=new Map();vgroups.forEach(vg=>pdBy.set(vg,perfPerDayFor(vg)));
+  const series=[];
+  mets.forEach(m=>{const met=PERF_MET[m];
+    vgroups.forEach((vg,vi)=>{
+      const vals=perfMetVals(m,pdBy.get(vg));
+      const vlabel=vg===null?"tất cả":vg;
+      let name,color,dash="";
+      if(multiMet&&multiVert){name=`${met.name} · ${vlabel}`;color=met.color;dash=DASHES[vi%DASHES.length];}
+      else if(multiVert){name=vlabel;color=VERT_COLORS[vg]||met.color;}
+      else{name=met.name;color=met.color;}
+      series.push({vals,color,name,pct:met.pct,dash});
+    });
+  });
   const hasCount=series.some(s=>!s.pct), hasPct=series.some(s=>s.pct);
-  const legend=series.map(s=>`<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;color:var(--ink-2);font-weight:500"><span style="width:12px;height:3px;border-radius:2px;background:${s.color};display:inline-block"></span>${s.name}${s.pct?" %":""}</span>`).join("");
+  const legend=series.map(s=>{
+    const sw=s.dash?`background:repeating-linear-gradient(90deg,${s.color} 0 5px,transparent 5px 8px)`:`background:${s.color}`;
+    return `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px;color:var(--ink-2);font-weight:500"><span style="width:14px;height:3px;border-radius:2px;${sw};display:inline-block"></span>${s.name}${s.pct?" %":""}</span>`;
+  }).join("");
   const axisNote=(hasCount&&hasPct)?" &middot; trục trái = distinct/ngày, trục phải = %":"";
-  $("#pTrendDesc").innerHTML=`<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 0">${legend}</span><span>Cửa sổ được tô nền${axisNote}.</span>`;
+  const vertNote=multiVert?" &middot; mỗi vertical 1 đường":"";
+  $("#pTrendDesc").innerHTML=`<span style="display:inline-flex;flex-wrap:wrap;align-items:center;gap:2px 0">${legend}</span><span>Cửa sổ được tô nền${axisNote}${vertNote}.</span>`;
   const {cur}=winIdx(perf);
   drawChart({holder:$("#pTrend"),series,windowSet:new Set(cur),height:220});
 }
