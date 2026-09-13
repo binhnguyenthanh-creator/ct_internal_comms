@@ -384,6 +384,7 @@ const del={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],
 // content_card & inbox report total_reach as IMPRESSIONS (session-based, can exceed sent),
 // not real delivery. Route those channels' "reach" into an Impress bucket instead.
 const CAMP_SIDES=DEL.campSides||[];
+const SIDE_LABEL={demand:"buyer",supply:"seller",other:"other"};
 const IMPRESS_SET=new Set();DEL.channels.forEach((c,i)=>{if(c==="content_card"||c==="inbox")IMPRESS_SET.add(i);});
 const isImpress=r=>IMPRESS_SET.has(r[1]);
 
@@ -520,22 +521,23 @@ function renderDelMovers(){
   let totA=0,totB=0;cis.forEach(ci=>{totA+=va.get(ci)||0;totB+=vb.get(ci)||0;});
   const totD=totB-totA;
   const sdir=totD>=0?1:-1;   // drivers of the change first (gainers when total rose, droppers when it fell)
-  let rows=[...cis].map(ci=>{const a=va.get(ci)||0,b=vb.get(ci)||0;return{ci,name:DEL.camps[ci],ch:domCh(ci),a,b,d:b-a};})
+  let rows=[...cis].map(ci=>{const a=va.get(ci)||0,b=vb.get(ci)||0;return{ci,name:DEL.camps[ci],side:CAMP_SIDES[ci],ch:domCh(ci),a,b,d:b-a};})
     .filter(r=>r.d!==0).sort((x,y)=>(y.d-x.d)*sdir);
   rows=rows.slice(0,80);
   const arrow=totD>=0?"▲":"▼", cls=totD>=0?"up":"down";
   $("#dMvSummary").innerHTML=`${MV_MET_NAME[met]}: <b>${fmtDate(del.mvA)}</b> ${fmt(totA)} → <b>${fmtDate(del.mvB)}</b> ${fmt(totB)} · <span class="delta ${cls}">${arrow} ${signed(totD)} · ${totA?pct(totD/totA,0):"new"}</span>`;
-  th.innerHTML=`<tr><th>Campaign</th><th>Channel</th><th>${fmtDate(del.mvA)}</th><th>${fmtDate(del.mvB)}</th><th>&#916;</th><th>% &#273;&#243;ng g&#243;p</th></tr>`;
+  th.innerHTML=`<tr><th>Campaign</th><th>Side</th><th>Channel</th><th>${fmtDate(del.mvA)}</th><th>${fmtDate(del.mvB)}</th><th>&#916;</th><th>% &#273;&#243;ng g&#243;p</th></tr>`;
   tb.innerHTML="";
   rows.forEach(r=>{const tr=el("tr");
     const dc=r.d>0?"var(--good-ink)":r.d<0?"var(--bad-ink)":"var(--muted)";
     tr.innerHTML=`<td title="${r.name.replace(/"/g,"&quot;")}">${r.name}</td>`+
+      `<td><span class="pill-ch">${SIDE_LABEL[r.side]||r.side||"—"}</span></td>`+
       `<td><span class="pill-ch">${r.ch}</span></td>`+
       `<td class="num">${fmt(r.a)}</td><td class="num">${fmt(r.b)}</td>`+
       `<td class="num" style="color:${dc};font-weight:600">${(r.d>=0?"+":"")+fmt(r.d)}</td>`+
       `<td class="num">${totD?pct(r.d/totD,0):"—"}</td>`;
     tb.appendChild(tr);});
-  if(!rows.length)tb.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted)">không có thay đổi giữa 2 ngày này (theo bộ lọc)</td></tr>`;
+  if(!rows.length)tb.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted)">không có thay đổi giữa 2 ngày này (theo bộ lọc)</td></tr>`;
 }
 /* movers wiring */
 (function(){const opts=DATES.map(d=>`<option value="${d}">${fmtDateW(d)}</option>`).join("");
@@ -730,7 +732,6 @@ function renderPerfTbl(){
   const total=rows.length;
   rows=rows.slice(0,200);
   const num=v=>v==null?'<span style="color:var(--muted)">—</span>':fmt(v);
-  const SIDE_LABEL={demand:"buyer",supply:"seller",other:"other"};
   const cols=[["name","Campaign"],["side","Side"],["sent","Sent"],["reach","Reach"],["opens","Direct open"],
     ["dau","DAU"],["dva","DAU w/ adview"],["crA","CR adview"],
     ["dlead","DAU w/ lead"],["crL","CR lead"],["leads","Leads"],
