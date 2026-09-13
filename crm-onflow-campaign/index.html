@@ -141,9 +141,27 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 .fn-handoff{display:flex;align-items:center;gap:10px;margin:12px 0;padding:8px 12px;border:1px dashed var(--hair-strong);border-radius:10px;background:var(--surface-2);font-size:11.5px;color:var(--muted);line-height:1.4}
 .fn-handoff .ic{font-size:14px;color:var(--warn)}
 .fn-handoff b{color:var(--ink-2);font-weight:600}
+
+/* day-over-day movers — compact diverging list */
+.mv-list{display:flex;flex-direction:column;gap:2px;margin-top:8px}
+.mv-item{display:grid;grid-template-columns:20px minmax(120px,1.25fr) minmax(90px,2fr) 122px;gap:12px;align-items:center;padding:5px 6px;border-radius:8px}
+.mv-item:hover{background:var(--surface-2)}
+.mv-rank{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);text-align:center}
+.mv-name{font-size:12.5px;font-weight:600;color:var(--ink);overflow:hidden;display:flex;flex-direction:column;gap:1px}
+.mv-name .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mv-name .mv-meta{font-size:10.5px;color:var(--muted);font-weight:400;display:flex;align-items:center;gap:6px}
+.mv-track{position:relative;height:20px}
+.mv-zero{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--hair-strong)}
+.mv-bar{position:absolute;top:50%;transform:translateY(-50%);height:12px;border-radius:3px;opacity:.9}
+.mv-delta{text-align:right;line-height:1.2}
+.mv-delta b{font-family:"IBM Plex Mono",monospace;font-size:13px}
+.mv-delta .mv-share{display:block;font-size:10px;color:var(--muted)}
+.mv-more{margin-top:10px;border:1px solid var(--hair-strong);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;display:none;gap:6px;align-items:center}
+.mv-more:hover{border-color:var(--accent);color:var(--accent)}
 @media (max-width:900px){.kpis.k4{grid-template-columns:repeat(2,1fr)}.kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k6{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.wrap{padding:18px 14px 48px}h1{font-size:21px}.kpis.k3,.kpis.k4,.kpis.k6{grid-template-columns:1fr 1fr}
-  .fn-row{grid-template-columns:1fr;gap:3px;padding:6px 0;border-bottom:1px solid var(--hair)}.fn-row.branch .fn-label{padding-left:0}.fn-row.branch .fn-label:before{display:none}.fn-conv{text-align:left}.fn-conv .fn-conv-lbl{display:inline;margin-left:6px}}
+  .fn-row{grid-template-columns:1fr;gap:3px;padding:6px 0;border-bottom:1px solid var(--hair)}.fn-row.branch .fn-label{padding-left:0}.fn-row.branch .fn-label:before{display:none}.fn-conv{text-align:left}.fn-conv .fn-conv-lbl{display:inline;margin-left:6px}
+  .mv-item{grid-template-columns:1fr 96px;gap:8px}.mv-rank,.mv-track{display:none}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -189,7 +207,9 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       </div>
     </div>
 
-    <div class="panel fn-panel" id="dFunnel" style="margin-top:14px"></div>
+    <section class="kpis k4" id="dKpis"></section>
+
+    <div class="panel fn-panel" id="dFunnel" style="margin-top:16px"></div>
 
     <div class="panel" style="margin-top:16px">
       <div class="p-head">
@@ -220,8 +240,8 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 
     <div class="panel" style="margin-top:16px">
       <div class="p-head">
-        <div><div class="p-title">&#916; gi&#7919;a 2 ng&#224;y &mdash; campaign n&#224;o &#273;&#7849;y s&#7889;?</div>
-          <div class="p-desc">Ch&#7885;n 2 ng&#224;y &#273;&#7875; xem campaign n&#224;o g&#7917;i th&#234;m/b&#7899;t l&#224;m thay &#273;&#7893;i t&#7893;ng. <b>% &#273;&#243;ng g&#243;p</b> = &#916; c&#7911;a campaign / t&#7893;ng &#916;. Theo b&#7897; l&#7885;c &#273;ang &#225;p d&#7909;ng &#7903; tr&#234;n.</div></div>
+        <div><div class="p-title">Ai &#273;&#7849;y s&#7889;? &mdash; ngu&#7891;n thay &#273;&#7893;i gi&#7919;a 2 ng&#224;y</div>
+          <div class="p-desc">Top campaign l&#224;m t&#7893;ng thay &#273;&#7893;i nhi&#7873;u nh&#7845;t gi&#7919;a 2 ng&#224;y (thanh xanh = &#273;&#7849;y l&#234;n, &#273;&#7887; = k&#233;o xu&#7889;ng). <b>% &#273;&#243;ng g&#243;p</b> = &#916; campaign / t&#7893;ng &#916;. Theo b&#7897; l&#7885;c &#273;ang &#225;p d&#7909;ng.</div></div>
         <div class="seg" id="dMvMetSeg">
           <button data-m="sent" type="button" aria-pressed="true">Sent</button>
           <button data-m="reach" type="button">Reach</button>
@@ -236,7 +256,8 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
         <div class="spacer"></div>
         <div class="range-note" id="dMvSummary"></div>
       </div>
-      <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="dMvTbl"><thead></thead><tbody></tbody></table></div>
+      <div class="mv-list" id="dMvList"></div>
+      <button type="button" id="dMvToggle" class="mv-more"></button>
     </div>
   </section>
 
@@ -413,7 +434,7 @@ function drawChart(opts){
 /* ================= SECTION 1 · DELIVERY ================= */
 const del={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],
   ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),camp:"",metrics:new Set(["sent"]),bk:"channel",
-  mvA:DATES[Math.max(0,N-2)],mvB:DATES[N-1],mvMet:"sent"};
+  mvA:DATES[Math.max(0,N-2)],mvB:DATES[N-1],mvMet:"sent",mvShowAll:false};
 
 // content_card & inbox report total_reach as IMPRESSIONS (session-based, can exceed sent),
 // not real delivery. Route those channels' "reach" into an Impress bucket instead.
@@ -451,6 +472,24 @@ const DEL_MET={
   deliv_rate:{color:"var(--drate)",name:"Deliver rate",pct:true},
   open_rate:{color:"var(--orate)",name:"Open rate",pct:true}
 };
+// ---- volume scorecards (headline totals + WoW delta) ----
+function renderDelKpis(){
+  const {cur,prev}=winIdx(del),full=prev.length===cur.length&&prev.length>0;
+  const c=delSum(cur),p=delSum(prev);
+  const dr=c.sentReal?c.reach/c.sentReal:null;             // deliver rate = real reach / real-channel sent
+  const shown=c.reach+c.impress;
+  const or=shown?c.opens/shown:null;                        // open rate = opens / (reach + impress)
+  const cards=[
+    {cls:"c-sent",n:"Total sent",v:compact(c.sent),rate:"",pill:dpill(c.sent,p.sent,full),foot:daysLabel(cur)},
+    {cls:"c-reach",n:"Total reach",v:compact(c.reach),rate:`Deliver rate <b>${pct(dr)}</b>`,pill:dpill(c.reach,p.reach,full),foot:"push &amp; in-app · delivered"},
+    {cls:"c-dva",n:"Total impress",v:compact(c.impress),rate:"l&#432;&#7907;t hi&#7875;n (session)",pill:dpill(c.impress,p.impress,full),foot:"content card &amp; inbox"},
+    {cls:"c-open",n:"Total direct open",v:compact(c.opens),rate:`Open rate <b>${pct(or)}</b>`,pill:dpill(c.opens,p.opens,full),foot:"opened / clicked"}
+  ];
+  const box=$("#dKpis");box.innerHTML="";
+  cards.forEach(cd=>{const k=el("div","kpi "+cd.cls);
+    k.innerHTML=`<div class="k-name"><span>${cd.n}</span></div><div class="k-val">${cd.v}</div>${cd.rate?`<div class="k-rate">${cd.rate}</div>`:""}${cd.pill}<div class="k-foot">${cd.foot}</div>`;
+    box.appendChild(k);});
+}
 // ---- on-app attribution for the funnel handoff ----
 // set of campaign_names that pass the current delivery filter within a window
 function delFilteredNames(cs){
@@ -604,10 +643,11 @@ function delBiggestJump(){
   for(let i=1;i<N;i++){const d=Math.abs(delDayTotal(i,del.mvMet)-delDayTotal(i-1,del.mvMet));if(d>best){best=d;at=i;}}
   del.mvA=DATES[at-1];del.mvB=DATES[at];$("#dMvA").value=del.mvA;$("#dMvB").value=del.mvB;
 }
+const MV_LIMIT=10;
 function renderDelMovers(){
   const met=del.mvMet, ai=DATES.indexOf(del.mvA), bi=DATES.indexOf(del.mvB);
-  const th=$("#dMvTbl thead"),tb=$("#dMvTbl tbody");
-  if(ai<0||bi<0){tb.innerHTML="";$("#dMvSummary").textContent="chọn 2 ngày";return;}
+  const list=$("#dMvList"),tog=$("#dMvToggle");
+  if(ai<0||bi<0){list.innerHTML="";tog.style.display="none";$("#dMvSummary").textContent="chọn 2 ngày";return;}
   const va=new Map(),vb=new Map(),chAgg=new Map();
   for(const r of DROWS){if(!delRowOk(r)||(r[0]!==ai&&r[0]!==bi))continue;
     const val=delMetOne(r,met);
@@ -621,33 +661,39 @@ function renderDelMovers(){
   const sdir=totD>=0?1:-1;   // drivers of the change first (gainers when total rose, droppers when it fell)
   let rows=[...cis].map(ci=>{const a=va.get(ci)||0,b=vb.get(ci)||0;return{ci,name:DEL.camps[ci],side:CAMP_SIDES[ci],ch:domCh(ci),a,b,d:b-a};})
     .filter(r=>r.d!==0).sort((x,y)=>(y.d-x.d)*sdir);
-  rows=rows.slice(0,80);
+  const total=rows.length;
   const arrow=totD>=0?"▲":"▼", cls=totD>=0?"up":"down";
   $("#dMvSummary").innerHTML=`${MV_MET_NAME[met]}: <b>${fmtDate(del.mvA)}</b> ${fmt(totA)} → <b>${fmtDate(del.mvB)}</b> ${fmt(totB)} · <span class="delta ${cls}">${arrow} ${signed(totD)} · ${totA?pct(totD/totA,0):"new"}</span>`;
-  th.innerHTML=`<tr><th>Campaign</th><th>Side</th><th>Channel</th><th>${fmtDate(del.mvA)}</th><th>${fmtDate(del.mvB)}</th><th>&#916;</th><th>% &#273;&#243;ng g&#243;p</th></tr>`;
-  tb.innerHTML="";
-  rows.forEach(r=>{const tr=el("tr");
-    const dc=r.d>0?"var(--good-ink)":r.d<0?"var(--bad-ink)":"var(--muted)";
-    tr.innerHTML=`<td title="${r.name.replace(/"/g,"&quot;")}">${r.name}</td>`+
-      `<td><span class="pill-ch">${SIDE_LABEL[r.side]||r.side||"—"}</span></td>`+
-      `<td><span class="pill-ch">${r.ch}</span></td>`+
-      `<td class="num">${fmt(r.a)}</td><td class="num">${fmt(r.b)}</td>`+
-      `<td class="num" style="color:${dc};font-weight:600">${(r.d>=0?"+":"")+fmt(r.d)}</td>`+
-      `<td class="num">${totD?pct(r.d/totD,0):"—"}</td>`;
-    tb.appendChild(tr);});
-  if(!rows.length)tb.innerHTML=`<tr><td colspan="7" style="text-align:center;color:var(--muted)">không có thay đổi giữa 2 ngày này (theo bộ lọc)</td></tr>`;
+  const shown=del.mvShowAll?rows.slice(0,80):rows.slice(0,MV_LIMIT);
+  const maxAbs=shown.reduce((m,r)=>Math.max(m,Math.abs(r.d)),1);
+  list.innerHTML="";
+  shown.forEach((r,i)=>{
+    const pos=r.d>=0, w=Math.max(3,Math.abs(r.d)/maxAbs*50);   // % of the half-track
+    const barStyle=pos?`left:50%;width:${w}%;background:var(--good)`:`right:50%;width:${w}%;background:var(--bad)`;
+    const it=el("div","mv-item");
+    it.innerHTML=`<div class="mv-rank">${i+1}</div>`+
+      `<div class="mv-name"><span class="nm" title="${r.name.replace(/"/g,"&quot;")}">${r.name}</span>`+
+        `<span class="mv-meta"><span class="pill-ch">${r.ch}</span>${r.side?" "+(SIDE_LABEL[r.side]||r.side):""}</span></div>`+
+      `<div class="mv-track"><span class="mv-zero"></span><span class="mv-bar" style="${barStyle}"></span></div>`+
+      `<div class="mv-delta"><b style="color:${pos?'var(--good-ink)':'var(--bad-ink)'}">${(r.d>=0?"+":"")+compact(r.d)}</b>`+
+        `<span class="mv-share">${totD?pct(r.d/totD,0):"—"} đóng góp</span></div>`;
+    list.appendChild(it);});
+  if(!shown.length)list.innerHTML=`<div style="text-align:center;color:var(--muted);padding:16px">không có thay đổi giữa 2 ngày này (theo bộ lọc)</div>`;
+  if(total>MV_LIMIT){tog.style.display="inline-flex";tog.textContent=del.mvShowAll?"Thu gọn ↑":`Xem tất cả ${total} campaign ↓`;}
+  else tog.style.display="none";
 }
 /* movers wiring */
 (function(){const opts=DATES.map(d=>`<option value="${d}">${fmtDateW(d)}</option>`).join("");
   $("#dMvA").innerHTML=opts;$("#dMvB").innerHTML=opts;$("#dMvA").value=del.mvA;$("#dMvB").value=del.mvB;})();
-$("#dMvA").addEventListener("change",e=>{del.mvA=e.target.value;renderDelMovers();});
-$("#dMvB").addEventListener("change",e=>{del.mvB=e.target.value;renderDelMovers();});
+$("#dMvA").addEventListener("change",e=>{del.mvA=e.target.value;del.mvShowAll=false;renderDelMovers();});
+$("#dMvB").addEventListener("change",e=>{del.mvB=e.target.value;del.mvShowAll=false;renderDelMovers();});
 $("#dMvMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
-  del.mvMet=b.dataset.m;renderDelMovers();});
-$("#dMvJump").addEventListener("click",()=>{delBiggestJump();renderDelMovers();});
+  del.mvMet=b.dataset.m;del.mvShowAll=false;renderDelMovers();});
+$("#dMvJump").addEventListener("click",()=>{delBiggestJump();del.mvShowAll=false;renderDelMovers();});
+$("#dMvToggle").addEventListener("click",()=>{del.mvShowAll=!del.mvShowAll;renderDelMovers();});
 
-function renderDeliv(){renderDelFunnel();renderDelTrend();renderDelBk();renderDelMovers();}
+function renderDeliv(){renderDelKpis();renderDelFunnel();renderDelTrend();renderDelBk();renderDelMovers();}
 
 /* ---- delivery filter wiring ---- */
 function chipGroup(mount,labels,set,onChange){
