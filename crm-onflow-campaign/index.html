@@ -108,8 +108,42 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 .tt .r b{font-family:"IBM Plex Mono",monospace;color:var(--ink)}
 .foot{margin-top:36px;font-size:12px;color:var(--muted);line-height:1.7;border-top:1px solid var(--hair);padding-top:16px}
 .foot code{font-family:"IBM Plex Mono",monospace;background:var(--surface);border:1px solid var(--hair);padding:1px 6px;border-radius:5px;color:var(--ink-2);font-size:11.5px}.foot b{color:var(--ink-2)}
+
+/* conversion funnel */
+.fn-panel{padding-top:14px}
+.fn-seg{margin-top:6px}
+.fn-seg+.fn-seg{margin-top:4px}
+.fn-seg-head{display:flex;justify-content:space-between;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:12px 0 8px}
+.fn-seg-tag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--ink-2);display:inline-flex;align-items:center;gap:8px}
+.fn-seg-tag .n{width:20px;height:20px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px}
+.fn-seg.s1 .fn-seg-tag .n{background:var(--sent)}.fn-seg.s2 .fn-seg-tag .n{background:var(--reach)}
+.fn-weak{font-size:12px;color:var(--warn);background:var(--warn-soft);border:1px solid color-mix(in srgb,var(--warn) 30%,transparent);padding:3px 10px;border-radius:20px;font-weight:500}
+.fn-weak b{color:var(--warn);font-weight:700}
+.fn-rows{display:flex;flex-direction:column;gap:6px}
+.fn-row{display:grid;grid-template-columns:200px 1fr 172px;gap:14px;align-items:center}
+.fn-row.branch .fn-label{padding-left:16px;position:relative}
+.fn-row.branch .fn-label:before{content:"";position:absolute;left:4px;top:50%;width:8px;height:1px;background:var(--hair-strong)}
+.fn-label{font-size:13px;font-weight:600;color:var(--ink);display:flex;flex-direction:column;gap:1px;line-height:1.25}
+.fn-label .fn-sub{font-size:10.5px;color:var(--muted);font-weight:400;letter-spacing:.01em}
+.fn-bar-wrap{position:relative;background:var(--plane);border:1px solid var(--hair);border-radius:8px;height:34px;overflow:hidden}
+.fn-bar{height:100%;border-radius:7px;min-width:3px;opacity:.85;transition:width .35s ease}
+.fn-bar.c-sent{background:var(--sent)}.fn-bar.c-reach{background:var(--reach)}.fn-bar.c-impress{background:var(--teal)}
+.fn-bar.c-open{background:var(--open)}.fn-bar.c-dau{background:var(--sent)}.fn-bar.c-dva{background:var(--teal)}.fn-bar.c-dlead{background:var(--reach)}
+.fn-val{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:13px;color:var(--ink);text-shadow:0 1px 3px var(--surface),0 0 3px var(--surface)}
+.fn-conv{font-size:12.5px;color:var(--ink-2);text-align:left;line-height:1.3}
+.fn-conv b{font-family:"IBM Plex Mono",monospace;color:var(--ink);font-size:13.5px}
+.fn-conv .fn-arrow{color:var(--muted);font-weight:700}
+.fn-conv .fn-conv-lbl{display:block;font-size:10.5px;color:var(--muted);letter-spacing:.02em}
+.fn-pp{font-size:10.5px;font-weight:600;padding:1px 5px;border-radius:10px;margin-left:4px;white-space:nowrap}
+.fn-pp.up{color:var(--good-ink);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.fn-pp.down{color:var(--bad-ink);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.fn-pp.flat{color:var(--muted);background:var(--plane)}
+.fn-handoff{display:flex;align-items:center;gap:10px;margin:12px 0;padding:8px 12px;border:1px dashed var(--hair-strong);border-radius:10px;background:var(--surface-2);font-size:11.5px;color:var(--muted);line-height:1.4}
+.fn-handoff .ic{font-size:14px;color:var(--warn)}
+.fn-handoff b{color:var(--ink-2);font-weight:600}
 @media (max-width:900px){.kpis.k4{grid-template-columns:repeat(2,1fr)}.kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k6{grid-template-columns:repeat(2,1fr)}}
-@media (max-width:560px){.wrap{padding:18px 14px 48px}h1{font-size:21px}.kpis.k3,.kpis.k4,.kpis.k6{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.wrap{padding:18px 14px 48px}h1{font-size:21px}.kpis.k3,.kpis.k4,.kpis.k6{grid-template-columns:1fr 1fr}
+  .fn-row{grid-template-columns:1fr;gap:3px;padding:6px 0;border-bottom:1px solid var(--hair)}.fn-row.branch .fn-label{padding-left:0}.fn-row.branch .fn-label:before{display:none}.fn-conv{text-align:left}.fn-conv .fn-conv-lbl{display:inline;margin-left:6px}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 
@@ -127,8 +161,8 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
   <!-- ============================ SECTION 1 · DELIVERY ============================ -->
   <section class="sec deliv" id="secDeliv">
     <div class="sec-tag">01 &middot; Delivery</div>
-    <div class="sec-title">Delivery &mdash; g&#7917;i, delivered &amp; m&#7903;</div>
-    <p class="sec-sub">Ph&#7877;u tin nh&#7855;n Onflow: <b>Sent</b> (g&#7917;i &#273;i) &rarr; <b>Reach</b> (delivered th&#7921;c &mdash; push &amp; in-app) / <b>Impress</b> (content card &amp; inbox t&#237;nh theo l&#432;&#7907;t hi&#7875;n/session n&#234;n c&#243; th&#7875; &gt; sent) &rarr; <b>Direct open</b> (m&#7903;/click). Ch&#7881; campaign Ch&#7907; T&#7889;t. L&#7885;c theo ng&#224;y, channel, platform, side, delivery type, campaign.</p>
+    <div class="sec-title">Delivery &mdash; ph&#7877;u chuy&#7875;n &#273;&#7893;i</div>
+    <p class="sec-sub">Xem <b>s&#7913;c kh&#7887;e chuy&#7875;n &#273;&#7893;i</b> gi&#7919;a c&#225;c b&#432;&#7899;c &#273;&#7875; bi&#7871;t <b>b&#432;&#7899;c n&#224;o c&#7847;n c&#7843;i thi&#7879;n</b>, kh&#244;ng ch&#7881; nh&#236;n volume. Ph&#7877;u: <b>Sent</b> &rarr; <b>Reach</b> (delivered: push, pop-up/in-app) / <b>Impress</b> (shown: inbox, content card) &rarr; <b>Direct open</b>, r&#7891;i b&#224;n giao sang <b>on-app</b> (DAU &rarr; xem tin &rarr; lead). Reach/Impress &amp; DAU l&#224; 2 h&#7879; &#273;o kh&#225;c nhau n&#234;n <b>kh&#244;ng</b> n&#7889;i t&#7927; l&#7879; open&rarr;DAU. Ch&#7881; campaign Ch&#7907; T&#7889;t; l&#7885;c theo ng&#224;y, channel, platform, side, delivery type, campaign.</p>
 
     <div class="controls">
       <div class="ctl"><span class="ctl-label">Range</span>
@@ -155,9 +189,9 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       </div>
     </div>
 
-    <section class="kpis k4" id="dKpis"></section>
+    <div class="panel fn-panel" id="dFunnel" style="margin-top:14px"></div>
 
-    <div class="panel" style="margin-top:14px">
+    <div class="panel" style="margin-top:16px">
       <div class="p-head">
         <div><div class="p-title">Theo ng&#224;y</div><div class="p-desc" id="dTrendDesc"></div></div>
         <div class="seg" id="dMetSeg">
@@ -417,23 +451,87 @@ const DEL_MET={
   deliv_rate:{color:"var(--drate)",name:"Deliver rate",pct:true},
   open_rate:{color:"var(--orate)",name:"Open rate",pct:true}
 };
-function renderDelKpis(){
+// ---- on-app attribution for the funnel handoff ----
+// set of campaign_names that pass the current delivery filter within a window
+function delFilteredNames(cs){
+  const s=new Set();
+  for(const r of DROWS){if(cs.has(r[0])&&delRowOk(r))s.add(DEL.camps[r[4]]);}
+  return s;
+}
+// sum on-app outcomes (user-days) for those campaign_names in a window
+function perfForNames(cs,nameSet){
+  let dau=0,dva=0,dlead=0;
+  for(const r of PD){if(!cs.has(r[0]))continue;if(!nameSet.has(CAMPS[r[1]][0]))continue;
+    dau+=r[2];dva+=r[3];dlead+=r[8];}
+  return{dau,dva,dlead};
+}
+// compact percentage-point delta chip for a rate step
+function ppMini(now,was,full){
+  if(!full||now==null||was==null||!isFinite(now)||!isFinite(was))return"";
+  const d=(now-was)*100;
+  if(Math.abs(d)<0.05)return ` <span class="fn-pp flat">0pp</span>`;
+  return ` <span class="fn-pp ${d>0?"up":"down"}">${d>0?"+":""}${d.toFixed(1)}pp</span>`;
+}
+// build one funnel row. o:{label,sub,cls,value,rate,rateLbl,delta,entry,branch}
+function fnRow(o){
+  const w=o.entry?100:(o.rate==null?0:Math.max(2,Math.min(o.rate,1)*100));
+  let conv;
+  if(o.entry)conv=`<span class="fn-conv-lbl">${o.rateLbl||"mốc gốc"}</span>`;
+  else if(o.rate==null)conv=`<span class="fn-arrow">↓</span> <b>—</b><span class="fn-conv-lbl">${o.rateLbl||""}</span>`;
+  else conv=`<span class="fn-arrow">↓</span> <b>${pct(o.rate)}</b>${o.delta||""}<span class="fn-conv-lbl">${o.rateLbl||""}</span>`;
+  return `<div class="fn-row${o.branch?" branch":""}">
+    <div class="fn-label">${o.label}${o.sub?`<span class="fn-sub">${o.sub}</span>`:""}</div>
+    <div class="fn-bar-wrap"><div class="fn-bar ${o.cls}" style="width:${w}%"></div><span class="fn-val">${o.value}</span></div>
+    <div class="fn-conv">${conv}</div></div>`;
+}
+function renderDelFunnel(){
   const {cur,prev}=winIdx(del),full=prev.length===cur.length&&prev.length>0;
   const c=delSum(cur),p=delSum(prev);
-  const dr=c.sentReal?c.reach/c.sentReal:null;             // deliver rate = real reach / real-channel sent
-  const shown=c.reach+c.impress;
-  const or=shown?c.opens/shown:null;                        // open rate = opens / (reach + impress)
-  const cards=[
-    {cls:"c-sent",n:"Total sent",v:compact(c.sent),rate:"",pill:dpill(c.sent,p.sent,full),foot:daysLabel(cur)},
-    {cls:"c-reach",n:"Total reach",v:compact(c.reach),rate:`Deliver rate <b>${pct(dr)}</b>`,pill:dpill(c.reach,p.reach,full),foot:"push &amp; in-app · delivered"},
-    {cls:"c-dva",n:"Total impress",v:compact(c.impress),rate:"l&#432;&#7907;t hi&#7875;n (session)",pill:dpill(c.impress,p.impress,full),foot:"content card &amp; inbox"},
-    {cls:"c-open",n:"Total direct open",v:compact(c.opens),rate:`Open rate <b>${pct(or)}</b>`,pill:dpill(c.opens,p.opens,full),foot:"opened / clicked"}
-  ];
-  const box=$("#dKpis");box.innerHTML="";
-  cards.forEach(cd=>{const k=el("div","kpi "+cd.cls);
-    k.innerHTML=`<div class="k-name"><span>${cd.n}</span></div><div class="k-val">${cd.v}</div>${cd.rate?`<div class="k-rate">${cd.rate}</div>`:""}${cd.pill}<div class="k-foot">${cd.foot}</div>`;
-    box.appendChild(k);});
-  const nCamp=(()=>{const s=new Set(),cs=new Set(cur);for(const r of DROWS){if(cs.has(r[0])&&delRowOk(r))s.add(r[4]);}return s.size;})();
+  const cImp=c.sent-c.sentReal, pImp=p.sent-p.sentReal;   // sent on impress-type channels
+  // messaging rates
+  const dr=c.sentReal?c.reach/c.sentReal:null, drP=p.sentReal?p.reach/p.sentReal:null;   // deliver rate (push/in-app)
+  const ir=cImp?c.impress/cImp:null,          irP=pImp?p.impress/pImp:null;              // shown rate (inbox/content card)
+  const shown=c.reach+c.impress, shownP=p.reach+p.impress;
+  const or=shown?c.opens/shown:null,          orP=shownP?p.opens/shownP:null;            // open rate
+  // on-app handoff (attributed by campaign_name of the filtered delivery cohort)
+  const names=delFilteredNames(new Set(cur)), prevNames=delFilteredNames(new Set(prev));
+  const a=perfForNames(new Set(cur),names),   ap=perfForNames(new Set(prev),prevNames);
+  const crA=a.dau?a.dva/a.dau:null, crAp=ap.dau?ap.dva/ap.dau:null;      // view rate
+  const crL=a.dau?a.dlead/a.dau:null, crLp=ap.dau?ap.dlead/ap.dau:null;  // lead rate
+  // weakest clean step per segment (impress excluded — it can exceed 100%, not a loss step)
+  const weakest=arr=>arr.filter(x=>x.r!=null).sort((x,y)=>x.r-y.r)[0];
+  const w1=weakest([{n:"Deliver rate",r:dr},{n:"Open rate",r:or}]);
+  const w2=weakest([{n:"CR xem tin",r:crA},{n:"CR lead",r:crL}]);
+  const rows1=[
+    fnRow({label:"Sent",sub:"ghi nhận trên hệ thống",cls:"c-sent",value:compact(c.sent),entry:true,rateLbl:daysLabel(cur)}),
+    fnRow({label:"Reach",sub:"delivered · push, pop-up/in-app",cls:"c-reach",value:c.sentReal?compact(c.reach):"—",branch:true,
+      rate:dr,rateLbl:"deliver rate = reach / sent (push, in-app)",delta:ppMini(dr,drP,full)}),
+    fnRow({label:"Impress",sub:"shown · inbox, content card",cls:"c-impress",value:cImp?compact(c.impress):"—",branch:true,
+      rate:ir,rateLbl:"shown / sent (session-based, có thể &gt;100%)",delta:ppMini(ir,irP,full)}),
+    fnRow({label:"Direct open",sub:"mở / click",cls:"c-open",value:compact(c.opens),
+      rate:or,rateLbl:"open rate = open / (reach + impress)",delta:ppMini(or,orP,full)})
+  ].join("");
+  const rows2=[
+    fnRow({label:"DAU",sub:"landed · on-app (traffic gắn CRM)",cls:"c-dau",value:compact(a.dau),entry:true,rateLbl:"mốc gốc segment"}),
+    fnRow({label:"DAU w/ adview",sub:"có xem tin",cls:"c-dva",value:compact(a.dva),
+      rate:crA,rateLbl:"CR xem tin = adview / DAU",delta:ppMini(crA,crAp,full)}),
+    fnRow({label:"DAU w/ lead",sub:"để lại lead",cls:"c-dlead",value:compact(a.dlead),
+      rate:crL,rateLbl:"CR lead = lead / DAU",delta:ppMini(crL,crLp,full)})
+  ].join("");
+  const badge=w=>w?`<span class="fn-weak">Bước rớt mạnh nhất: <b>${w.n} ${pct(w.r)}</b></span>`:"";
+  $("#dFunnel").innerHTML=`
+    <div class="p-head" style="margin-bottom:6px"><div><div class="p-title">Phễu chuyển đổi</div>
+      <div class="p-desc">Mỗi bước = tỷ lệ so với bước trước. Thanh càng ngắn = rớt càng mạnh. <b>Reach/Impress</b> là 2 nhánh song song tùy channel.</div></div></div>
+    <div class="fn-seg s1">
+      <div class="fn-seg-head"><span class="fn-seg-tag"><span class="n">1</span> Tin nhắn · Onflow send-log</span>${badge(w1)}</div>
+      <div class="fn-rows">${rows1}</div>
+    </div>
+    <div class="fn-handoff"><span class="ic">⚡</span><span><b>Bàn giao 2 hệ đo khác nhau:</b> Direct open là message-event của Onflow; DAU là session traffic gắn CRM (theo campaign_name). DAU thường &gt; direct open → <b>không</b> tính tỷ lệ open→DAU. Xem segment on-app như một phễu riêng.</span></div>
+    <div class="fn-seg s2">
+      <div class="fn-seg-head"><span class="fn-seg-tag"><span class="n">2</span> On-app · sau khi nhận comms</span>${badge(w2)}</div>
+      <div class="fn-rows">${rows2}</div>
+    </div>`;
+  const nCamp=names.size;
   $("#dRangeNote").innerHTML=`<b>${cur.length}</b> days &middot; <b>${daysLabel(cur)}</b> &middot; <b>${nCamp}</b> campaigns`;
 }
 const DEL_MET_ORDER=["sent","reach","impress","opens","deliv_rate","open_rate"];
@@ -549,7 +647,7 @@ $("#dMvMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");
   del.mvMet=b.dataset.m;renderDelMovers();});
 $("#dMvJump").addEventListener("click",()=>{delBiggestJump();renderDelMovers();});
 
-function renderDeliv(){renderDelKpis();renderDelTrend();renderDelBk();renderDelMovers();}
+function renderDeliv(){renderDelFunnel();renderDelTrend();renderDelBk();renderDelMovers();}
 
 /* ---- delivery filter wiring ---- */
 function chipGroup(mount,labels,set,onChange){
