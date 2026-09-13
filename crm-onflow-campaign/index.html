@@ -189,7 +189,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
   <section class="sec perf" id="secPerf">
     <div class="sec-tag">02 &middot; Performance</div>
     <div class="sec-title">Performance &mdash; traffic sau khi nh&#7853;n comms</div>
-    <p class="sec-sub">Ng&#432;&#7901;i thu&#7897;c CRM session (channelGrouping=Growth) l&#224;m g&#236; tr&#234;n app: <b>DAU</b>, <b>DAU w/ adview</b>, <b>DAU w/ save-ad</b>, <b>DAU w/ lead</b> &mdash; k&#232;m <b>conversion rate</b> c&#7911;a t&#7915;ng ch&#7881; s&#7889; (/ DAU). Distinct-user metrics c&#7897;ng nhi&#7873;u ng&#224;y = user-days.</p>
+    <p class="sec-sub">Ng&#432;&#7901;i thu&#7897;c CRM session (channelGrouping=Growth) l&#224;m g&#236; tr&#234;n app: <b>DAU</b>, <b>DAU w/ adview</b>, <b>DAU w/ save-ad</b>, <b>DAU w/ lead</b> &mdash; k&#232;m <b>conversion rate</b> c&#7911;a t&#7915;ng ch&#7881; s&#7889; (/ DAU). Distinct-user metrics c&#7897;ng nhi&#7873;u ng&#224;y = user-days. L&#7885;c <b>Channel/Platform</b> = ph&#226;n lo&#7841;i campaign theo send-log (kh&#7899;p campaign_name): gi&#7919; campaign t&#7915;ng g&#7917;i qua channel/platform &#273;&#243; &mdash; metric v&#7851;n l&#224; t&#7893;ng c&#7911;a campaign.</p>
 
     <div class="controls">
       <div class="ctl"><span class="ctl-label">Range</span>
@@ -199,9 +199,15 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
         </div>
       </div>
       <div class="custom-range" id="pCustomRange"><input type="date" class="dt" id="pcStart"><span style="color:var(--muted)">&rarr;</span><input type="date" class="dt" id="pcEnd"></div>
+      <div class="ctl"><span class="ctl-label">Campaign</span><input type="text" class="search" id="pCampInput" placeholder="l&#7885;c campaign_name&hellip;"></div>
+    </div>
+    <div class="controls">
+      <div class="ctl"><span class="ctl-label">Channel</span><div class="chips" id="pChanChips"></div></div>
+      <div class="ctl"><span class="ctl-label">Platform</span><div class="chips" id="pPlatChips"></div></div>
+    </div>
+    <div class="controls">
       <div class="ctl"><span class="ctl-label">Vertical</span><div class="chips" id="pVertChips"></div></div>
       <div class="ctl"><span class="ctl-label">Side</span><div class="chips" id="pSideChips"></div></div>
-      <div class="ctl"><span class="ctl-label">Campaign</span><input type="text" class="search" id="pCampInput" placeholder="l&#7885;c campaign_name&hellip;"></div>
     </div>
 
     <section class="kpis k6" id="pKpis"></section>
@@ -515,10 +521,21 @@ $("#dcStart").addEventListener("change",e=>{del.cStart=e.target.value;if(del.ran
 $("#dcEnd").addEventListener("change",e=>{del.cEnd=e.target.value;if(del.range==="custom")renderDeliv();});
 
 /* ================= SECTION 2 · PERFORMANCE ================= */
-const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),camp:"",metrics:new Set(["dau"]),sort:"dau",dir:-1};
+const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),camp:"",metrics:new Set(["dau"]),sort:"dau",dir:-1};
+// campaign_name -> set of delivery channel / platform indices it was sent on (send-log footprint,
+// window-independent). Lets the Performance section filter by channel/platform via campaign_name.
+const NAME_CH=new Map(), NAME_PF=new Map();
+for(const r of DROWS){const nm=DEL.camps[r[4]];
+  let sc=NAME_CH.get(nm);if(!sc){sc=new Set();NAME_CH.set(nm,sc);}sc.add(r[1]);
+  let sp=NAME_PF.get(nm);if(!sp){sp=new Set();NAME_PF.set(nm,sp);}sp.add(r[2]);}
+function campChPfOk(c){
+  if(perf.chs.size){const s=NAME_CH.get(c[0]);if(!s||![...perf.chs].some(x=>s.has(x)))return false;}
+  if(perf.pfs.size){const s=NAME_PF.get(c[0]);if(!s||![...perf.pfs].some(x=>s.has(x)))return false;}
+  return true;}
 function perfCampOk(ci){const c=CAMPS[ci];
   if(perf.verts.size&&!perf.verts.has(c[1]))return false;
   if(perf.sides.size&&!perf.sides.has(c[2]))return false;
+  if(!campChPfOk(c))return false;
   if(perf.camp&&!c[0].toLowerCase().includes(perf.camp.toLowerCase()))return false;
   return true;}
 function perfPerDay(){
@@ -575,6 +592,7 @@ function perfPerDayFor(vert){
   for(const r of PD){const c=CAMPS[r[1]];
     if(vert!==null&&c[1]!==vert)continue;
     if(perf.sides.size&&!perf.sides.has(c[2]))continue;
+    if(!campChPfOk(c))continue;
     if(cf&&!c[0].toLowerCase().includes(cf))continue;
     dau[r[0]]+=r[2];dva[r[0]]+=r[3];dsave[r[0]]+=r[10];dlead[r[0]]+=r[8];}
   return{dau,dva,dsave,dlead};
@@ -623,16 +641,19 @@ function renderPerfTbl(){
     const a=agg.get(r[1])||{dau:0,dva:0,dsave:0,dlead:0,leads:0};
     a.dau+=r[2];a.dva+=r[3];a.dsave+=r[10];a.dlead+=r[8];a.leads+=r[7];agg.set(r[1],a);}
   let rows=[...agg.entries()].map(([ci,a])=>{const nm=CAMPS[ci][0],d=dmap.get(nm);
-    return {ci,name:nm,vert:CAMPS[ci][1],
+    return {ci,name:nm,vert:CAMPS[ci][1],side:CAMPS[ci][2],
       sent:d?d.sent:null,reach:d?d.reach:null,opens:d?d.opens:null,
       dau:a.dau,dva:a.dva,dsave:a.dsave,dlead:a.dlead,leads:a.leads,
       crA:a.dau?a.dva/a.dau:0,crS:a.dau?a.dsave/a.dau:0,crL:a.dau?a.dlead/a.dau:0};});
   const key=perf.sort;
-  rows.sort((x,y)=>(((y[key]??-1)-(x[key]??-1)))*(perf.dir<0?1:-1));
+  rows.sort((x,y)=>{const a=x[key],b=y[key];
+    if(typeof a==="string"||typeof b==="string"){const c=String(a??"").localeCompare(String(b??""));return perf.dir<0?c:-c;}
+    return (((b??-1)-(a??-1)))*(perf.dir<0?1:-1);});
   const total=rows.length;
   rows=rows.slice(0,200);
   const num=v=>v==null?'<span style="color:var(--muted)">—</span>':fmt(v);
-  const cols=[["name","Campaign"],["sent","Sent"],["reach","Reach"],["opens","Direct open"],
+  const SIDE_LABEL={demand:"buyer",supply:"seller",other:"other"};
+  const cols=[["name","Campaign"],["side","Side"],["sent","Sent"],["reach","Reach"],["opens","Direct open"],
     ["dau","DAU"],["dva","DAU w/ adview"],["crA","CR adview"],
     ["dlead","DAU w/ lead"],["crL","CR lead"],["leads","Leads"],
     ["dsave","DAU w/ save-ad"],["crS","CR save"]];
@@ -641,6 +662,7 @@ function renderPerfTbl(){
   tb.innerHTML="";
   rows.forEach(r=>{const tr=el("tr");
     tr.innerHTML=`<td title="${r.name.replace(/"/g,"&quot;")}">${r.name}</td>`+
+      `<td><span class="pill-ch">${SIDE_LABEL[r.side]||r.side}</span></td>`+
       `<td class="num">${num(r.sent)}</td><td class="num">${num(r.reach)}</td><td class="num">${num(r.opens)}</td>`+
       `<td class="num">${fmt(r.dau)}</td><td class="num">${fmt(r.dva)}</td><td class="num">${pct(r.crA)}</td>`+
       `<td class="num">${fmt(r.dlead)}</td><td class="num">${pct(r.crL)}</td><td class="num">${fmt(r.leads)}</td>`+
@@ -657,6 +679,8 @@ function renderPerf(){renderPerfKpis();renderPerfTrend();renderPerfTbl();}
 $("#pRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
   perf.range=b.dataset.r;$("#pCustomRange").classList.toggle("on",perf.range==="custom");renderPerf();});
+chipGroup($("#pChanChips"),DEL.channelLabels,perf.chs,()=>renderPerf());
+chipGroup($("#pPlatChips"),DEL.platLabels,perf.pfs,()=>renderPerf());
 chipGroupV($("#pVertChips"),[{v:"gds",label:"gds"},{v:"veh",label:"veh"},{v:"pty",label:"pty"},{v:"jobs",label:"jobs"},{v:"other",label:"other"}],perf.verts,()=>renderPerf());
 chipGroupV($("#pSideChips"),SIDE_CHIPS,perf.sides,()=>renderPerf());
 $("#pMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
