@@ -183,6 +183,27 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       </div>
       <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="dBkTbl"><thead></thead><tbody></tbody></table></div>
     </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="p-head">
+        <div><div class="p-title">&#916; gi&#7919;a 2 ng&#224;y &mdash; campaign n&#224;o &#273;&#7849;y s&#7889;?</div>
+          <div class="p-desc">Ch&#7885;n 2 ng&#224;y &#273;&#7875; xem campaign n&#224;o g&#7917;i th&#234;m/b&#7899;t l&#224;m thay &#273;&#7893;i t&#7893;ng. <b>% &#273;&#243;ng g&#243;p</b> = &#916; c&#7911;a campaign / t&#7893;ng &#916;. Theo b&#7897; l&#7885;c &#273;ang &#225;p d&#7909;ng &#7903; tr&#234;n.</div></div>
+        <div class="seg" id="dMvMetSeg">
+          <button data-m="sent" type="button" aria-pressed="true">Sent</button>
+          <button data-m="reach" type="button">Reach</button>
+          <button data-m="impress" type="button">Impress</button>
+          <button data-m="opens" type="button">Direct open</button>
+        </div>
+      </div>
+      <div class="controls" style="box-shadow:none;border:0;padding:0;margin:4px 0 8px;background:transparent">
+        <div class="ctl"><span class="ctl-label">T&#7915; ng&#224;y</span><select class="msel" id="dMvA"></select></div>
+        <div class="ctl"><span class="ctl-label">&#273;&#7871;n ng&#224;y</span><select class="msel" id="dMvB"></select></div>
+        <div class="ctl"><button type="button" id="dMvJump" class="pill-ch" style="cursor:pointer">&#8635; ng&#224;y bi&#7871;n &#273;&#7897;ng m&#7841;nh nh&#7845;t</button></div>
+        <div class="spacer"></div>
+        <div class="range-note" id="dMvSummary"></div>
+      </div>
+      <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="dMvTbl"><thead></thead><tbody></tbody></table></div>
+    </div>
   </section>
 
   <!-- ============================ SECTION 2 · PERFORMANCE ============================ -->
@@ -357,7 +378,8 @@ function drawChart(opts){
 
 /* ================= SECTION 1 · DELIVERY ================= */
 const del={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],
-  ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),camp:"",metrics:new Set(["sent"]),bk:"channel"};
+  ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),camp:"",metrics:new Set(["sent"]),bk:"channel",
+  mvA:DATES[Math.max(0,N-2)],mvB:DATES[N-1],mvMet:"sent"};
 
 // content_card & inbox report total_reach as IMPRESSIONS (session-based, can exceed sent),
 // not real delivery. Route those channels' "reach" into an Impress bucket instead.
@@ -469,7 +491,63 @@ function renderDelBk(){
     tb.appendChild(tr);});
   if(!rows.length)tb.innerHTML=`<tr><td colspan="10" style="text-align:center;color:var(--muted)">không có dữ liệu cho bộ lọc này</td></tr>`;
 }
-function renderDeliv(){renderDelKpis();renderDelTrend();renderDelBk();}
+/* ---- day-vs-day movers: which campaigns drove the change ---- */
+const MV_MET_NAME={sent:"Sent",reach:"Reach",impress:"Impress",opens:"Direct open"};
+function delMetOne(r,met){
+  if(met==="sent")return r[5];
+  if(met==="opens")return r[7];
+  if(met==="impress")return isImpress(r)?r[6]:0;
+  return isImpress(r)?0:r[6];   // reach = non-impress channels only
+}
+function delDayTotal(di,met){let s=0;for(const r of DROWS){if(r[0]===di&&delRowOk(r))s+=delMetOne(r,met);}return s;}
+function delBiggestJump(){
+  let best=-1,at=1;
+  for(let i=1;i<N;i++){const d=Math.abs(delDayTotal(i,del.mvMet)-delDayTotal(i-1,del.mvMet));if(d>best){best=d;at=i;}}
+  del.mvA=DATES[at-1];del.mvB=DATES[at];$("#dMvA").value=del.mvA;$("#dMvB").value=del.mvB;
+}
+function renderDelMovers(){
+  const met=del.mvMet, ai=DATES.indexOf(del.mvA), bi=DATES.indexOf(del.mvB);
+  const th=$("#dMvTbl thead"),tb=$("#dMvTbl tbody");
+  if(ai<0||bi<0){tb.innerHTML="";$("#dMvSummary").textContent="chọn 2 ngày";return;}
+  const va=new Map(),vb=new Map(),chAgg=new Map();
+  for(const r of DROWS){if(!delRowOk(r)||(r[0]!==ai&&r[0]!==bi))continue;
+    const val=delMetOne(r,met);
+    if(r[0]===ai)va.set(r[4],(va.get(r[4])||0)+val);
+    if(r[0]===bi)vb.set(r[4],(vb.get(r[4])||0)+val);
+    let m=chAgg.get(r[4]);if(!m){m=new Map();chAgg.set(r[4],m);}m.set(r[1],(m.get(r[1])||0)+val);}
+  const domCh=ci=>{const m=chAgg.get(ci);if(!m)return"";let bk=-1,bv=-1;m.forEach((v,k)=>{if(v>bv){bv=v;bk=k;}});return bk>=0?DEL.channelLabels[bk]:"";};
+  const cis=new Set([...va.keys(),...vb.keys()]);
+  let totA=0,totB=0;cis.forEach(ci=>{totA+=va.get(ci)||0;totB+=vb.get(ci)||0;});
+  const totD=totB-totA;
+  const sdir=totD>=0?1:-1;   // drivers of the change first (gainers when total rose, droppers when it fell)
+  let rows=[...cis].map(ci=>{const a=va.get(ci)||0,b=vb.get(ci)||0;return{ci,name:DEL.camps[ci],ch:domCh(ci),a,b,d:b-a};})
+    .filter(r=>r.d!==0).sort((x,y)=>(y.d-x.d)*sdir);
+  rows=rows.slice(0,80);
+  const arrow=totD>=0?"▲":"▼", cls=totD>=0?"up":"down";
+  $("#dMvSummary").innerHTML=`${MV_MET_NAME[met]}: <b>${fmtDate(del.mvA)}</b> ${fmt(totA)} → <b>${fmtDate(del.mvB)}</b> ${fmt(totB)} · <span class="delta ${cls}">${arrow} ${signed(totD)} · ${totA?pct(totD/totA,0):"new"}</span>`;
+  th.innerHTML=`<tr><th>Campaign</th><th>Channel</th><th>${fmtDate(del.mvA)}</th><th>${fmtDate(del.mvB)}</th><th>&#916;</th><th>% &#273;&#243;ng g&#243;p</th></tr>`;
+  tb.innerHTML="";
+  rows.forEach(r=>{const tr=el("tr");
+    const dc=r.d>0?"var(--good-ink)":r.d<0?"var(--bad-ink)":"var(--muted)";
+    tr.innerHTML=`<td title="${r.name.replace(/"/g,"&quot;")}">${r.name}</td>`+
+      `<td><span class="pill-ch">${r.ch}</span></td>`+
+      `<td class="num">${fmt(r.a)}</td><td class="num">${fmt(r.b)}</td>`+
+      `<td class="num" style="color:${dc};font-weight:600">${(r.d>=0?"+":"")+fmt(r.d)}</td>`+
+      `<td class="num">${totD?pct(r.d/totD,0):"—"}</td>`;
+    tb.appendChild(tr);});
+  if(!rows.length)tb.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--muted)">không có thay đổi giữa 2 ngày này (theo bộ lọc)</td></tr>`;
+}
+/* movers wiring */
+(function(){const opts=DATES.map(d=>`<option value="${d}">${fmtDateW(d)}</option>`).join("");
+  $("#dMvA").innerHTML=opts;$("#dMvB").innerHTML=opts;$("#dMvA").value=del.mvA;$("#dMvB").value=del.mvB;})();
+$("#dMvA").addEventListener("change",e=>{del.mvA=e.target.value;renderDelMovers();});
+$("#dMvB").addEventListener("change",e=>{del.mvB=e.target.value;renderDelMovers();});
+$("#dMvMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
+  del.mvMet=b.dataset.m;renderDelMovers();});
+$("#dMvJump").addEventListener("click",()=>{delBiggestJump();renderDelMovers();});
+
+function renderDeliv(){renderDelKpis();renderDelTrend();renderDelBk();renderDelMovers();}
 
 /* ---- delivery filter wiring ---- */
 function chipGroup(mount,labels,set,onChange){
