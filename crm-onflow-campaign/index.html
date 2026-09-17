@@ -229,7 +229,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 
     <div class="panel" style="margin-top:16px">
       <div class="p-head">
-        <div><div class="p-title">Breakdown</div><div class="p-desc">T&#7893;ng trong c&#7917;a s&#7893; &amp; b&#7897; l&#7885;c hi&#7879;n t&#7841;i. Deliver rate = reach/sent &middot; Open rate = open/reach. <b>Reach</b> = delivered th&#7921;c (push/in-app); <b>Impress</b> = l&#432;&#7907;t hi&#7875;n content card/inbox; b&#234;n n&#224;o kh&#244;ng c&#243; &#273;&#7875; <b>&mdash;</b>. <b>DAU / DAU w/ adview / DAU w/ lead / Lead</b> = k&#7871;t qu&#7843; on-app c&#7911;a c&#225;c campaign thu&#7897;c d&#242;ng &#273;&#243; (kh&#7899;p theo campaign_name, user-days) &mdash; ngu&#7891;n &#273;o kh&#225;c v&#7899;i sent/open n&#234;n <b>kh&#244;ng</b> t&#237;nh t&#7927; l&#7879; open&rarr;DAU; campaign &#273;a k&#234;nh &#273;&#432;&#7907;c t&#237;nh &#7903; m&#7895;i d&#242;ng. <b>Lead</b> = t&#7893;ng s&#7889; lead (c&#7897;ng d&#7891;n), kh&#225;c <b>DAU w/ lead</b> = s&#7889; user distinct c&#243; lead.</div></div>
+        <div><div class="p-title">Breakdown</div><div class="p-desc">T&#7893;ng trong c&#7917;a s&#7893; &amp; b&#7897; l&#7885;c hi&#7879;n t&#7841;i. Deliver rate = reach/sent &middot; Open rate = open/reach. <b>Reach</b> = delivered th&#7921;c (push/in-app); <b>Impress</b> = l&#432;&#7907;t hi&#7875;n content card/inbox; b&#234;n n&#224;o kh&#244;ng c&#243; &#273;&#7875; <b>&mdash;</b>. <b>DAU / DAU w/ adview / DAU w/ lead / Lead</b> = k&#7871;t qu&#7843; on-app c&#7911;a c&#225;c campaign thu&#7897;c d&#242;ng &#273;&#243; (kh&#7899;p theo campaign_name) &mdash; DAU/adview/lead l&#224; <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); ngu&#7891;n &#273;o kh&#225;c v&#7899;i sent/open n&#234;n <b>kh&#244;ng</b> t&#237;nh t&#7927; l&#7879; open&rarr;DAU; campaign &#273;a k&#234;nh &#273;&#432;&#7907;c t&#237;nh &#7903; m&#7895;i d&#242;ng. <b>Lead</b> = t&#7893;ng s&#7889; lead (c&#7897;ng d&#7891;n), kh&#225;c <b>DAU w/ lead</b> = s&#7889; user distinct c&#243; lead (TB/ng&#224;y).</div></div>
         <div class="seg" id="dBkSeg">
           <button data-b="channel" type="button" aria-pressed="true">By channel</button>
           <button data-b="platform" type="button">By platform</button>
@@ -266,7 +266,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
   <section class="sec perf" id="secPerf">
     <div class="sec-tag">02 &middot; Performance</div>
     <div class="sec-title">Performance &mdash; traffic sau khi nh&#7853;n comms</div>
-    <p class="sec-sub">Ng&#432;&#7901;i thu&#7897;c CRM session (channelGrouping=Growth) l&#224;m g&#236; tr&#234;n app: <b>DAU</b>, <b>DAU w/ adview</b>, <b>DAU w/ save-ad</b>, <b>DAU w/ lead</b> &mdash; k&#232;m <b>conversion rate</b> c&#7911;a t&#7915;ng ch&#7881; s&#7889; (/ DAU). Distinct-user metrics c&#7897;ng nhi&#7873;u ng&#224;y = user-days. L&#7885;c <b>Channel/Platform</b> = ph&#226;n lo&#7841;i campaign theo send-log (kh&#7899;p campaign_name): gi&#7919; campaign t&#7915;ng g&#7917;i qua channel/platform &#273;&#243; &mdash; metric v&#7851;n l&#224; t&#7893;ng c&#7911;a campaign.</p>
+    <p class="sec-sub">Ng&#432;&#7901;i thu&#7897;c CRM session (channelGrouping=Growth) l&#224;m g&#236; tr&#234;n app: <b>DAU</b>, <b>DAU w/ adview</b>, <b>DAU w/ save-ad</b>, <b>DAU w/ lead</b> &mdash; k&#232;m <b>conversion rate</b> c&#7911;a t&#7915;ng ch&#7881; s&#7889; (/ DAU). Distinct-user metrics (DAU, DAU w/ adview/lead/save-ad) = <b>trung b&#236;nh/ng&#224;y</b> trong kho&#7843;ng l&#7885;c (&Sigma; distinct &divide; s&#7889; ng&#224;y). L&#7885;c <b>Channel/Platform</b> = ph&#226;n lo&#7841;i campaign theo send-log (kh&#7899;p campaign_name): gi&#7919; campaign t&#7915;ng g&#7917;i qua channel/platform &#273;&#243; &mdash; metric v&#7851;n l&#224; t&#7893;ng c&#7911;a campaign.</p>
 
     <div class="controls">
       <div class="ctl"><span class="ctl-label">Range</span>
@@ -306,7 +306,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">T&#7893;ng trong c&#7917;a s&#7893; (user-days) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p.</div></div>
+      <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p.</div></div>
         <div class="range-note" id="pTblNote"></div>
       </div>
       <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="pTbl"><thead></thead><tbody></tbody></table></div>
@@ -527,6 +527,7 @@ function fnRow(o){
 }
 function renderDelFunnel(){
   const {cur,prev}=winIdx(del),full=prev.length===cur.length&&prev.length>0;
+  const nd=cur.length||1;   // on-app DAU metrics shown as avg/day (Sent/Reach/Open stay additive totals)
   const c=delSum(cur),p=delSum(prev);
   const cImp=c.sent-c.sentReal, pImp=p.sent-p.sentReal;   // sent on impress-type channels
   // messaging rates
@@ -553,10 +554,10 @@ function renderDelFunnel(){
       rate:or,rateLbl:"open rate = open / (reach + impress)",delta:ppMini(or,orP,full)})
   ].join("");
   const rows2=[
-    fnRow({label:"DAU",sub:"landed · on-app (traffic gắn CRM)",cls:"c-dau",value:compact(a.dau),entry:true,rateLbl:"mốc gốc segment"}),
-    fnRow({label:"DAU w/ adview",sub:"có xem tin",cls:"c-dva",value:compact(a.dva),
+    fnRow({label:"DAU",sub:"landed · on-app · TB/ngày",cls:"c-dau",value:compact(a.dau/nd),entry:true,rateLbl:"mốc gốc segment"}),
+    fnRow({label:"DAU w/ adview",sub:"có xem tin · TB/ngày",cls:"c-dva",value:compact(a.dva/nd),
       rate:crA,rateLbl:"CR xem tin = adview / DAU",delta:ppMini(crA,crAp,full)}),
-    fnRow({label:"DAU w/ lead",sub:"để lại lead",cls:"c-dlead",value:compact(a.dlead),
+    fnRow({label:"DAU w/ lead",sub:"để lại lead · TB/ngày",cls:"c-dlead",value:compact(a.dlead/nd),
       rate:crL,rateLbl:"CR lead = lead / DAU",delta:ppMini(crL,crLp,full)})
   ].join("");
   const badge=w=>w?`<span class="fn-weak">Bước rớt mạnh nhất: <b>${w.n} ${pct(w.r)}</b></span>`:"";
@@ -606,6 +607,7 @@ function perfByNameInWin(cs){
 }
 function renderDelBk(){
   const {cur}=winIdx(del),cs=new Set(cur);
+  const nd=cur.length||1;   // distinct-user metrics (DAU/adview/lead) shown as avg/day; Lead stays additive sum
   const dim=del.bk, keyIdx=dim==="channel"?1:dim==="platform"?2:3;
   const labels=dim==="channel"?DEL.channelLabels:dim==="platform"?DEL.platLabels:DEL.triggerLabels;
   const pmap=perfByNameInWin(cs);         // campaign_name -> {dau,dva,dlead}
@@ -620,7 +622,7 @@ function renderDelBk(){
     a.names.forEach(nm=>{const p=pmap.get(nm);if(p){dau+=p.dau;dva+=p.dva;dlead+=p.dlead;leads+=p.leads;}});
     const shown=a.reach+a.impress;
     return {k,label:labels[k],sent:a.sent,sentReal:a.sentReal,reach:a.reach,impress:a.impress,opens:a.opens,
-      dr:a.sentReal?a.reach/a.sentReal:null,or:shown?a.opens/shown:null,dau,dva,dlead,leads};})
+      dr:a.sentReal?a.reach/a.sentReal:null,or:shown?a.opens/shown:null,dau:dau/nd,dva:dva/nd,dlead:dlead/nd,leads};})
     .sort((x,y)=>y.sent-x.sent);
   const dash='<span style="color:var(--muted)">—</span>';
   const th=$("#dBkTbl thead"),tb=$("#dBkTbl tbody");
@@ -786,15 +788,16 @@ const PERF_MET={
 };
 function renderPerfKpis(){
   const {cur,prev}=winIdx(perf),full=prev.length===cur.length&&prev.length>0;
+  const nd=cur.length||1;   // distinct-user metrics shown as avg/day over the selected range
   const c=perfSum(cur),p=perfSum(prev);
   const crA=c.dau?c.dva/c.dau:null,crAp=p.dau?p.dva/p.dau:null;
   const crS=c.dau?c.dsave/c.dau:null,crSp=p.dau?p.dsave/p.dau:null;
   const crL=c.dau?c.dlead/c.dau:null,crLp=p.dau?p.dlead/p.dau:null;
   const cards=[
-    {cls:"c-dau",n:"DAU",v:compact(c.dau),rate:"reached (user-days)",pill:dpill(c.dau,p.dau,full)},
-    {cls:"c-dva",n:"DAU w/ adview",v:compact(c.dva),rate:"distinct có adview",pill:dpill(c.dva,p.dva,full)},
-    {cls:"c-dlead",n:"DAU w/ lead",v:compact(c.dlead),rate:"distinct có lead",pill:dpill(c.dlead,p.dlead,full)},
-    {cls:"c-dsave",n:"DAU w/ save-ad",v:compact(c.dsave),rate:"distinct có save-ad",pill:dpill(c.dsave,p.dsave,full)},
+    {cls:"c-dau",n:"DAU",v:compact(c.dau/nd),rate:"trung bình user/ngày",pill:dpill(c.dau,p.dau,full)},
+    {cls:"c-dva",n:"DAU w/ adview",v:compact(c.dva/nd),rate:"distinct có adview · TB/ngày",pill:dpill(c.dva,p.dva,full)},
+    {cls:"c-dlead",n:"DAU w/ lead",v:compact(c.dlead/nd),rate:"distinct có lead · TB/ngày",pill:dpill(c.dlead,p.dlead,full)},
+    {cls:"c-dsave",n:"DAU w/ save-ad",v:compact(c.dsave/nd),rate:"distinct có save-ad · TB/ngày",pill:dpill(c.dsave,p.dsave,full)},
     {cls:"c-cra",n:"CR DAU w/ adview",v:pct(crA),rate:"DAU w/ adview / DAU",pill:dpillPct(crA,crAp,full)},
     {cls:"c-crl",n:"CR DAU w/ lead",v:pct(crL),rate:"DAU w/ lead / DAU",pill:dpillPct(crL,crLp,full)}
   ];
@@ -862,6 +865,7 @@ function delByNameInWin(cs){
 }
 function renderPerfTbl(){
   const {cur}=winIdx(perf),cs=new Set(cur);
+  const nd=cur.length||1;          // distinct-user metrics shown as avg/day over the selected range
   const dmap=delByNameInWin(cs);   // campaign_name -> {sent,reach,opens}
   const agg=new Map();
   for(const r of PD){if(!cs.has(r[0])||!perfCampOk(r[1]))continue;
@@ -871,7 +875,7 @@ function renderPerfTbl(){
     return {ci,name:nm,vert:CAMPS[ci][1],side:CAMPS[ci][2],
       title:CAMPS[ci][7]||"",body:CAMPS[ci][8]||"",
       sent:d?d.sent:null,reach:d?d.reach:null,opens:d?d.opens:null,
-      dau:a.dau,dva:a.dva,dsave:a.dsave,dlead:a.dlead,leads:a.leads,
+      dau:a.dau/nd,dva:a.dva/nd,dsave:a.dsave/nd,dlead:a.dlead/nd,leads:a.leads,
       crA:a.dau?a.dva/a.dau:0,crS:a.dau?a.dsave/a.dau:0,crL:a.dau?a.dlead/a.dau:0};});
   const key=perf.sort;
   rows.sort((x,y)=>{const a=x[key],b=y[key];
@@ -924,7 +928,7 @@ $("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.r
 $("#pcEnd").addEventListener("change",e=>{perf.cEnd=e.target.value;if(perf.range==="custom")renderPerf();});
 
 /* ---------- footer + redraw ---------- */
-$("#foot").innerHTML=`<b>Delivery</b> = <code>chotot_onflow.onflow__campaign_daily</code> (Chợ Tốt only; Mudah loại qua <code>project_id</code>). Sent → Reach (delivered) → Direct open. zns không track reach → deliver rate zns = 0. Campaign &lt;1000 sent/28d gộp vào <code>(other, low-volume)</code>.<br><b>Performance</b> = traffic CRM session (<code>traffic_visit_detail</code> Growth ∩ lead/event detail), per campaign. DAU/DAU w-X là distinct/ngày → cộng nhiều ngày = user-days; CR = distinct-w-X / DAU trong cửa sổ.`;
+$("#foot").innerHTML=`<b>Delivery</b> = <code>chotot_onflow.onflow__campaign_daily</code> (Chợ Tốt only; Mudah loại qua <code>project_id</code>). Sent → Reach (delivered) → Direct open. zns không track reach → deliver rate zns = 0. Campaign &lt;1000 sent/28d gộp vào <code>(other, low-volume)</code>.<br><b>Performance</b> = traffic CRM session (<code>traffic_visit_detail</code> Growth ∩ lead/event detail), per campaign. DAU/DAU w-X là distinct/ngày → hiển thị <b>trung bình/ngày</b> trong khoảng lọc (Σ distinct ÷ số ngày); Leads là cộng dồn; CR = distinct-w-X / DAU trong cửa sổ.`;
 function drawAll(){renderDeliv();renderPerf();}
 drawAll();
 let rt;window.addEventListener("resize",()=>{clearTimeout(rt);rt=setTimeout(()=>{renderDelTrend();renderPerfTrend();},180);});
