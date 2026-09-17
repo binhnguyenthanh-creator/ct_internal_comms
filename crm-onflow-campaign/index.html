@@ -329,7 +329,10 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 
     <div class="panel" style="margin-top:16px">
       <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p.</div></div>
-        <div class="range-note" id="pTblNote"></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <input type="text" class="search" id="pTblSearch" placeholder="l&#7885;c campaign trong b&#7843;ng&hellip;" autocomplete="off">
+          <div class="range-note" id="pTblNote"></div>
+        </div>
       </div>
       <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="pTbl"><thead></thead><tbody></tbody></table></div>
     </div>
@@ -772,7 +775,7 @@ $("#dcStart").addEventListener("change",e=>{del.cStart=e.target.value;if(del.ran
 $("#dcEnd").addEventListener("change",e=>{del.cEnd=e.target.value;if(del.range==="custom")renderDeliv();});
 
 /* ================= SECTION 2 · PERFORMANCE ================= */
-const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),campSel:new Set(),metrics:new Set(["dau"]),sort:"dau",dir:-1};
+const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),campSel:new Set(),tblQ:"",metrics:new Set(["dau"]),sort:"dau",dir:-1};
 // campaign_name -> set of delivery channel / platform indices it was sent on (send-log footprint,
 // window-independent). Lets the Performance section filter by channel/platform via campaign_name.
 const NAME_CH=new Map(), NAME_PF=new Map();
@@ -898,6 +901,7 @@ function renderPerfTbl(){
       sent:d?d.sent:null,reach:d?d.reach:null,opens:d?d.opens:null,
       dau:a.dau/nd,dva:a.dva/nd,dsave:a.dsave/nd,dlead:a.dlead/nd,leads:a.leads,
       crA:a.dau?a.dva/a.dau:0,crS:a.dau?a.dsave/a.dau:0,crL:a.dau?a.dlead/a.dau:0};});
+  if(perf.tblQ){const q=perf.tblQ.toLowerCase();rows=rows.filter(r=>r.name.toLowerCase().includes(q));}
   const key=perf.sort;
   rows.sort((x,y)=>{const a=x[key],b=y[key];
     if(typeof a==="string"||typeof b==="string"){const c=String(a??"").localeCompare(String(b??""));return perf.dir<0?c:-c;}
@@ -924,7 +928,7 @@ function renderPerfTbl(){
       `<td class="num">${fmt(r.dsave)}</td><td class="num">${pct(r.crS)}</td>`;
     tb.appendChild(tr);});
   if(!rows.length)tb.innerHTML=`<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted)">không có campaign cho bộ lọc này</td></tr>`;
-  $("#pTblNote").innerHTML=`<b>${total}</b> campaigns${total>200?" (top 200)":""} &middot; ${daysLabel(cur)} &middot; Sent/Reach/Open khớp theo campaign_name (— = không có trong send-log)`;
+  $("#pTblNote").innerHTML=`<b>${total}</b> campaigns${total>200?" (top 200)":""}${perf.tblQ?` khớp "<b>${esc(perf.tblQ)}</b>"`:""} &middot; ${daysLabel(cur)} &middot; Sent/Reach/Open khớp theo campaign_name (— = không có trong send-log)`;
   th.querySelectorAll("th").forEach(h=>h.addEventListener("click",()=>{const k=h.dataset.k;
     if(perf.sort===k)perf.dir*=-1;else{perf.sort=k;perf.dir=-1;}renderPerfTbl();}));
 }
@@ -984,6 +988,8 @@ $("#pMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if
   document.addEventListener("click",e=>{if(!$("#pCampMS").contains(e.target)){open=false;drop.classList.remove("on");}});
   renderChips();
 })();
+/* table-local quick filter (only narrows the "Theo campaign" table view) */
+$("#pTblSearch").addEventListener("input",e=>{perf.tblQ=e.target.value.trim();renderPerfTbl();});
 $("#pcStart").value=perf.cStart;$("#pcEnd").value=perf.cEnd;
 $("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.range==="custom")renderPerf();});
 $("#pcEnd").addEventListener("change",e=>{perf.cEnd=e.target.value;if(perf.range==="custom")renderPerf();});
