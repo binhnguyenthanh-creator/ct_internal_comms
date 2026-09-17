@@ -77,7 +77,7 @@ input.search{cursor:text;min-width:210px}
 .ms-chip .x{border:none;background:transparent;color:var(--accent);cursor:pointer;font-size:14px;line-height:1;padding:0 3px;border-radius:50%}
 .ms-chip .x:hover{background:var(--accent);color:#fff}
 .ms-input{flex:1;min-width:90px;border:none;outline:none;background:transparent;color:var(--ink);font:inherit;font-size:12.5px;padding:4px 2px}
-.ms-drop{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:20;min-width:260px;max-width:440px;max-height:300px;overflow-y:auto;background:var(--surface);border:1px solid var(--hair-strong);border-radius:10px;box-shadow:var(--shadow);padding:4px}
+.ms-drop{display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:20;min-width:260px;max-width:440px;max-height:300px;overflow-y:auto;background:var(--surface);border:1px solid var(--hair-strong);border-radius:10px;box-shadow:var(--shadow);padding:4px}
 .ms-drop.on{display:block}
 .ms-opt{padding:7px 10px;border-radius:7px;font-size:12.5px;color:var(--ink-2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ms-opt:hover{background:var(--accent-soft);color:var(--accent)}
@@ -322,15 +322,13 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <div class="p-head" style="align-items:flex-start"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p.</div></div>
-        <div class="ctl" style="flex-direction:column;align-items:flex-end;gap:6px">
-          <div style="display:flex;align-items:center;gap:8px"><span class="ctl-label">L&#7885;c campaign</span>
-            <div class="ms" id="pCampMS">
-              <div class="ms-box" id="pCampBox"><span class="ms-chips" id="pCampChips"></span><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"></div>
-              <div class="ms-drop" id="pCampDrop"></div>
-            </div>
-          </div>
-          <div class="range-note" id="pTblNote"></div>
+      <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p.</div></div>
+        <div class="range-note" id="pTblNote"></div>
+      </div>
+      <div class="ctl" style="margin:2px 0 10px"><span class="ctl-label">L&#7885;c campaign</span>
+        <div class="ms" id="pCampMS">
+          <div class="ms-box" id="pCampBox"><span class="ms-chips" id="pCampChips"></span><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"></div>
+          <div class="ms-drop" id="pCampDrop"></div>
         </div>
       </div>
       <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="pTbl"><thead></thead><tbody></tbody></table></div>
