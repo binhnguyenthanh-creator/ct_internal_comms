@@ -67,6 +67,23 @@ select.msel,input.dt,input.search{font:inherit;font-size:12.5px;padding:6px 10px
 input.dt{font-family:"IBM Plex Mono",monospace;font-size:12px}
 input.search{cursor:text;min-width:210px}
 .custom-range{display:none;align-items:center;gap:8px}.custom-range.on{display:flex}
+/* searchable multi-select (campaign filter) */
+.ms{position:relative;display:inline-block}
+.ms-box{display:flex;flex-wrap:wrap;gap:5px;align-items:center;min-width:240px;max-width:380px;padding:4px 6px;border:1px solid var(--hair-strong);border-radius:8px;background:var(--surface);cursor:text}
+.ms-box:focus-within{border-color:var(--accent)}
+.ms-chips{display:inline-flex;flex-wrap:wrap;gap:5px}
+.ms-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);border-radius:14px;padding:2px 4px 2px 9px;font-size:11.5px;font-weight:500;max-width:220px}
+.ms-chip .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-chip .x{border:none;background:transparent;color:var(--accent);cursor:pointer;font-size:14px;line-height:1;padding:0 3px;border-radius:50%}
+.ms-chip .x:hover{background:var(--accent);color:#fff}
+.ms-input{flex:1;min-width:90px;border:none;outline:none;background:transparent;color:var(--ink);font:inherit;font-size:12.5px;padding:4px 2px}
+.ms-drop{display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:20;min-width:100%;max-width:440px;max-height:300px;overflow-y:auto;background:var(--surface);border:1px solid var(--hair-strong);border-radius:10px;box-shadow:var(--shadow);padding:4px}
+.ms-drop.on{display:block}
+.ms-opt{padding:7px 10px;border-radius:7px;font-size:12.5px;color:var(--ink-2);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-opt:hover{background:var(--accent-soft);color:var(--accent)}
+.ms-all{font-weight:600;color:var(--accent)}
+.ms-clear{font-weight:600;color:var(--bad-ink)}
+.ms-empty,.ms-more{padding:7px 10px;font-size:11.5px;color:var(--muted)}
 .spacer{flex:1 1 auto}.range-note{font-size:12px;color:var(--muted)}.range-note b{color:var(--ink-2);font-weight:600}
 
 .kpis{display:grid;gap:14px;margin:14px 0 8px}
@@ -276,7 +293,12 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
         </div>
       </div>
       <div class="custom-range" id="pCustomRange"><input type="date" class="dt" id="pcStart"><span style="color:var(--muted)">&rarr;</span><input type="date" class="dt" id="pcEnd"></div>
-      <div class="ctl"><span class="ctl-label">Campaign</span><input type="text" class="search" id="pCampInput" placeholder="l&#7885;c campaign_name&hellip;"></div>
+      <div class="ctl"><span class="ctl-label">Campaign</span>
+        <div class="ms" id="pCampMS">
+          <div class="ms-box" id="pCampBox"><span class="ms-chips" id="pCampChips"></span><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"></div>
+          <div class="ms-drop" id="pCampDrop"></div>
+        </div>
+      </div>
     </div>
     <div class="controls">
       <div class="ctl"><span class="ctl-label">Channel</span><div class="chips" id="pChanChips"></div></div>
@@ -750,7 +772,7 @@ $("#dcStart").addEventListener("change",e=>{del.cStart=e.target.value;if(del.ran
 $("#dcEnd").addEventListener("change",e=>{del.cEnd=e.target.value;if(del.range==="custom")renderDeliv();});
 
 /* ================= SECTION 2 · PERFORMANCE ================= */
-const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),camp:"",metrics:new Set(["dau"]),sort:"dau",dir:-1};
+const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),campSel:new Set(),metrics:new Set(["dau"]),sort:"dau",dir:-1};
 // campaign_name -> set of delivery channel / platform indices it was sent on (send-log footprint,
 // window-independent). Lets the Performance section filter by channel/platform via campaign_name.
 const NAME_CH=new Map(), NAME_PF=new Map();
@@ -765,7 +787,7 @@ function perfCampOk(ci){const c=CAMPS[ci];
   if(perf.verts.size&&!perf.verts.has(c[1]))return false;
   if(perf.sides.size&&!perf.sides.has(c[2]))return false;
   if(!campChPfOk(c))return false;
-  if(perf.camp&&!c[0].toLowerCase().includes(perf.camp.toLowerCase()))return false;
+  if(perf.campSel.size&&!perf.campSel.has(c[0]))return false;
   return true;}
 function perfPerDay(){
   const dau=new Array(N).fill(0),dva=new Array(N).fill(0),dsave=new Array(N).fill(0),dlead=new Array(N).fill(0);
@@ -818,12 +840,11 @@ function perfMetVals(m,pd){
 // per-day sums for ONE vertical (vert=null → all verticals); campaign-name filter still applies
 function perfPerDayFor(vert){
   const dau=new Array(N).fill(0),dva=new Array(N).fill(0),dsave=new Array(N).fill(0),dlead=new Array(N).fill(0);
-  const cf=perf.camp?perf.camp.toLowerCase():"";
   for(const r of PD){const c=CAMPS[r[1]];
     if(vert!==null&&c[1]!==vert)continue;
     if(perf.sides.size&&!perf.sides.has(c[2]))continue;
     if(!campChPfOk(c))continue;
-    if(cf&&!c[0].toLowerCase().includes(cf))continue;
+    if(perf.campSel.size&&!perf.campSel.has(c[0]))continue;
     dau[r[0]]+=r[2];dva[r[0]]+=r[3];dsave[r[0]]+=r[10];dlead[r[0]]+=r[8];}
   return{dau,dva,dsave,dlead};
 }
@@ -922,7 +943,47 @@ $("#pMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if
   if(on){if(perf.metrics.size<=1)return;perf.metrics.delete(m);b.setAttribute("aria-pressed","false");}
   else{perf.metrics.add(m);b.setAttribute("aria-pressed","true");}
   renderPerfTrend();});
-$("#pCampInput").addEventListener("input",e=>{perf.camp=e.target.value.trim();renderPerf();});
+/* ---- campaign multi-select (search + pick many) ---- */
+(function campMultiSelect(){
+  const box=$("#pCampBox"), input=$("#pCampInput"), drop=$("#pCampDrop"), chipsEl=$("#pCampChips");
+  const ALL=[...new Set(CAMPS.map(c=>c[0]))].sort((a,b)=>a.localeCompare(b));
+  let open=false;
+  function renderChips(){
+    chipsEl.innerHTML="";
+    [...perf.campSel].forEach(nm=>{
+      const c=el("span","ms-chip");
+      c.innerHTML=`<span class="t" title="${esc(nm)}">${esc(nm)}</span><button type="button" class="x" aria-label="bỏ">×</button>`;
+      c.querySelector(".x").addEventListener("mousedown",ev=>{ev.preventDefault();ev.stopPropagation();perf.campSel.delete(nm);renderChips();renderDrop();renderPerf();});
+      chipsEl.appendChild(c);
+    });
+  }
+  function opt(cls,html,onPick){const o=el("div","ms-opt"+(cls?" "+cls:""),html);
+    o.addEventListener("mousedown",ev=>{ev.preventDefault();onPick();});return o;}
+  function renderDrop(){
+    if(!open){drop.classList.remove("on");return;}
+    const q=input.value.trim().toLowerCase();
+    const matches=ALL.filter(nm=>!perf.campSel.has(nm)&&(!q||nm.toLowerCase().includes(q)));
+    const shown=matches.slice(0,60);
+    drop.innerHTML="";
+    if(q&&matches.length>1)drop.appendChild(opt("ms-all",`＋ Thêm tất cả ${matches.length} kết quả`,
+      ()=>{matches.forEach(nm=>perf.campSel.add(nm));input.value="";renderChips();renderDrop();renderPerf();}));
+    if(perf.campSel.size)drop.appendChild(opt("ms-clear",`✕ Bỏ chọn tất cả (${perf.campSel.size})`,
+      ()=>{perf.campSel.clear();renderChips();renderDrop();renderPerf();}));
+    shown.forEach(nm=>{const o=opt("",esc(nm),()=>{perf.campSel.add(nm);input.value="";renderChips();renderDrop();renderPerf();});o.title=nm;drop.appendChild(o);});
+    if(!shown.length)drop.appendChild(el("div","ms-empty","không có campaign khớp"));
+    else if(matches.length>shown.length)drop.appendChild(el("div","ms-more",`… còn ${matches.length-shown.length} campaign nữa, gõ để lọc`));
+    drop.classList.add("on");
+  }
+  box.addEventListener("click",()=>{input.focus();});
+  input.addEventListener("focus",()=>{open=true;renderDrop();});
+  input.addEventListener("input",()=>{open=true;renderDrop();});
+  input.addEventListener("keydown",e=>{
+    if(e.key==="Backspace"&&!input.value&&perf.campSel.size){const last=[...perf.campSel].pop();perf.campSel.delete(last);renderChips();renderDrop();renderPerf();}
+    else if(e.key==="Escape"){open=false;drop.classList.remove("on");input.blur();}
+  });
+  document.addEventListener("click",e=>{if(!$("#pCampMS").contains(e.target)){open=false;drop.classList.remove("on");}});
+  renderChips();
+})();
 $("#pcStart").value=perf.cStart;$("#pcEnd").value=perf.cEnd;
 $("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.range==="custom")renderPerf();});
 $("#pcEnd").addEventListener("change",e=>{perf.cEnd=e.target.value;if(perf.range==="custom")renderPerf();});
