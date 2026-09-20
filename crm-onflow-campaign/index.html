@@ -84,6 +84,14 @@ input.search{cursor:text;min-width:210px}
 .ms-all{font-weight:600;color:var(--accent)}
 .ms-clear{font-weight:600;color:var(--bad-ink)}
 .ms-empty,.ms-more{padding:7px 10px;font-size:11.5px;color:var(--muted)}
+.ms-count{display:inline-flex;align-items:center;gap:5px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);border-radius:14px;padding:2px 4px 2px 10px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.ms-count[hidden]{display:none}
+.ms-count .x{border:none;background:transparent;color:var(--accent);cursor:pointer;font-size:14px;line-height:1;padding:0 4px;border-radius:50%}
+.ms-count .x:hover{background:var(--accent);color:#fff}
+.ms-row{display:flex;align-items:center;gap:7px}
+.ms-row .ck{flex:none;width:14px;text-align:center;color:var(--accent);font-weight:700}
+.ms-row .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-opt.sel{background:var(--accent-soft);color:var(--accent);font-weight:600}
 .spacer{flex:1 1 auto}.range-note{font-size:12px;color:var(--muted)}.range-note b{color:var(--ink-2);font-weight:600}
 
 .kpis{display:grid;gap:14px;margin:14px 0 8px}
@@ -188,7 +196,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     <div class="brand">
       <div class="eyebrow"><span class="dot"></span> Growth (CRM) &middot; internal comms</div>
       <h1>CRM OnFlow Campaign</h1>
-      <div class="sub"><b>Delivery</b> = messaging funnel g&#7917;i &#273;i (Onflow send-log). <b>Performance</b> = ng&#432;&#7901;i nh&#7853;n comms l&#224;m g&#236; tr&#234;n app (traffic g&#7855;n CRM session). Daily grain, 28 ng&#224;y g&#7847;n nh&#7845;t.</div>
+      <div class="sub"><b>Delivery</b> = messaging funnel g&#7917;i &#273;i (Onflow send-log). <b>Performance</b> = ng&#432;&#7901;i nh&#7853;n comms l&#224;m g&#236; tr&#234;n app (traffic g&#7855;n CRM session). Daily grain, 90 ng&#224;y g&#7847;n nh&#7845;t.</div>
       <div class="src" id="src"></div>
     </div>
     <button class="theme-btn" id="themeBtn" type="button"><span id="themeIco">&#9680;</span> Theme</button>
@@ -203,8 +211,9 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     <div class="controls">
       <div class="ctl"><span class="ctl-label">Range</span>
         <div class="seg" id="dRangeSeg">
+          <button data-r="3" type="button">3d</button><button data-r="5" type="button">5d</button>
           <button data-r="7" type="button" aria-pressed="true">7d</button><button data-r="14" type="button">14d</button>
-          <button data-r="28" type="button">Max</button><button data-r="custom" type="button">Custom</button>
+          <button data-r="30" type="button">30d</button><button data-r="90" type="button">90d</button><button data-r="custom" type="button">Custom</button>
         </div>
       </div>
       <div class="custom-range" id="dCustomRange"><input type="date" class="dt" id="dcStart"><span style="color:var(--muted)">&rarr;</span><input type="date" class="dt" id="dcEnd"></div>
@@ -219,9 +228,10 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       <div class="ctl"><span class="ctl-label">Side</span><div class="chips" id="dSideChips"></div></div>
       <div class="ctl"><span class="ctl-label">Delivery type</span><div class="chips" id="dTrigChips"></div></div>
       <div class="ctl"><span class="ctl-label">Campaign</span>
-        <input type="text" class="search" id="dCampInput" list="dCampList" placeholder="l&#7885;c campaign_name&hellip;">
-        <datalist id="dCampList"></datalist>
-        <button type="button" id="dCampClear" class="pill-ch" style="cursor:pointer;display:none">&times; b&#7887; l&#7885;c</button>
+        <div class="ms" id="dCampMS">
+          <div class="ms-box" id="dCampBox"><input type="text" class="ms-input" id="dCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"><span class="ms-count" id="dCampCount" hidden></span></div>
+          <div class="ms-drop" id="dCampDrop"></div>
+        </div>
       </div>
     </div>
 
@@ -288,8 +298,9 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     <div class="controls">
       <div class="ctl"><span class="ctl-label">Range</span>
         <div class="seg" id="pRangeSeg">
+          <button data-r="3" type="button">3d</button><button data-r="5" type="button">5d</button>
           <button data-r="7" type="button" aria-pressed="true">7d</button><button data-r="14" type="button">14d</button>
-          <button data-r="28" type="button">Max</button><button data-r="custom" type="button">Custom</button>
+          <button data-r="30" type="button">30d</button><button data-r="90" type="button">90d</button><button data-r="custom" type="button">Custom</button>
         </div>
       </div>
       <div class="custom-range" id="pCustomRange"><input type="date" class="dt" id="pcStart"><span style="color:var(--muted)">&rarr;</span><input type="date" class="dt" id="pcEnd"></div>
@@ -327,7 +338,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       </div>
       <div class="ctl" style="margin:2px 0 10px"><span class="ctl-label">L&#7885;c campaign</span>
         <div class="ms" id="pCampMS">
-          <div class="ms-box" id="pCampBox"><span class="ms-chips" id="pCampChips"></span><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"></div>
+          <div class="ms-box" id="pCampBox"><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"><span class="ms-count" id="pCampCount" hidden></span></div>
           <div class="ms-drop" id="pCampDrop"></div>
         </div>
       </div>
@@ -457,7 +468,7 @@ function drawChart(opts){
 
 /* ================= SECTION 1 · DELIVERY ================= */
 const del={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],
-  ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),camp:"",metrics:new Set(["sent"]),bk:"channel",
+  ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),campSel:new Set(),metrics:new Set(["sent"]),bk:"channel",
   mvA:DATES[Math.max(0,N-2)],mvB:DATES[N-1],mvMet:"sent",mvShowAll:false};
 
 // content_card & inbox report total_reach as IMPRESSIONS (session-based, can exceed sent),
@@ -472,7 +483,7 @@ function delRowOk(r){
   if(del.pf.size&&!del.pf.has(r[2]))return false;
   if(del.tt.size&&!del.tt.has(r[3]))return false;
   if(del.sides.size&&!del.sides.has(CAMP_SIDES[r[4]]))return false;
-  if(del.camp&&!DEL.camps[r[4]].toLowerCase().includes(del.camp.toLowerCase()))return false;
+  if(del.campSel.size&&!del.campSel.has(DEL.camps[r[4]]))return false;
   return true;
 }
 function delPerDay(){
@@ -754,9 +765,8 @@ const SIDE_CHIPS=[{v:"demand",label:"buyer",title:"campaign do team demand tạo
   {v:"supply",label:"seller",title:"campaign do team supply tạo — người bán"},
   {v:"other",label:"other",title:"product + khác"}];
 chipGroupV($("#dSideChips"),SIDE_CHIPS,del.sides,()=>renderDeliv());
-$("#dCampList").innerHTML=DEL.camps.map(c=>`<option value="${c.replace(/"/g,"&quot;")}">`).join("");
-$("#dCampInput").addEventListener("input",e=>{del.camp=e.target.value.trim();$("#dCampClear").style.display=del.camp?"inline-flex":"none";renderDeliv();});
-$("#dCampClear").addEventListener("click",()=>{del.camp="";$("#dCampInput").value="";$("#dCampClear").style.display="none";renderDeliv();});
+makeCampSelect({wrap:"#dCampMS",box:"#dCampBox",input:"#dCampInput",drop:"#dCampDrop",count:"#dCampCount",
+  all:[...new Set(DEL.camps)].sort((a,b)=>a.localeCompare(b)), state:del.campSel, onChange:renderDeliv});
 $("#dRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
   del.range=b.dataset.r;$("#dCustomRange").classList.toggle("on",del.range==="custom");renderDeliv();});
@@ -951,46 +961,48 @@ $("#pMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if
   else{perf.metrics.add(m);b.setAttribute("aria-pressed","true");}
   renderPerfTrend();});
 /* ---- campaign multi-select (search + pick many) ---- */
-(function campMultiSelect(){
-  const box=$("#pCampBox"), input=$("#pCampInput"), drop=$("#pCampDrop"), chipsEl=$("#pCampChips");
-  const ALL=[...new Set(CAMPS.map(c=>c[0]))].sort((a,b)=>a.localeCompare(b));
+// Reusable searchable multi-select for campaign filters (Delivery + Performance).
+// Compact: the box shows a search input + a "N đã chọn ✕" count pill (no chip stack).
+// The dropdown is a checkable list — selected rows keep a ✓ and stay in place; type to filter,
+// with "chọn tất cả kết quả" / "bỏ chọn tất cả" headers. State is a Set of campaign names.
+function makeCampSelect({wrap,box,input,drop,count,all,state,onChange}){
+  const W=$(wrap), B=$(box), I=$(input), D=$(drop), C=$(count);
   let open=false;
-  function renderChips(){
-    chipsEl.innerHTML="";
-    [...perf.campSel].forEach(nm=>{
-      const c=el("span","ms-chip");
-      c.innerHTML=`<span class="t" title="${esc(nm)}">${esc(nm)}</span><button type="button" class="x" aria-label="bỏ">×</button>`;
-      c.querySelector(".x").addEventListener("mousedown",ev=>{ev.preventDefault();ev.stopPropagation();perf.campSel.delete(nm);renderChips();renderDrop();renderPerf();});
-      chipsEl.appendChild(c);
-    });
+  function renderCount(){
+    if(state.size){C.hidden=false;C.innerHTML=`${state.size} đã chọn <button type="button" class="x" aria-label="bỏ chọn tất cả">×</button>`;
+      C.querySelector(".x").addEventListener("mousedown",ev=>{ev.preventDefault();ev.stopPropagation();state.clear();sync();});}
+    else C.hidden=true;
   }
   function opt(cls,html,onPick){const o=el("div","ms-opt"+(cls?" "+cls:""),html);
     o.addEventListener("mousedown",ev=>{ev.preventDefault();onPick();});return o;}
   function renderDrop(){
-    if(!open){drop.classList.remove("on");return;}
-    const q=input.value.trim().toLowerCase();
-    const matches=ALL.filter(nm=>!perf.campSel.has(nm)&&(!q||nm.toLowerCase().includes(q)));
-    const shown=matches.slice(0,60);
-    drop.innerHTML="";
-    if(q&&matches.length>1)drop.appendChild(opt("ms-all",`＋ Thêm tất cả ${matches.length} kết quả`,
-      ()=>{matches.forEach(nm=>perf.campSel.add(nm));input.value="";renderChips();renderDrop();renderPerf();}));
-    if(perf.campSel.size)drop.appendChild(opt("ms-clear",`✕ Bỏ chọn tất cả (${perf.campSel.size})`,
-      ()=>{perf.campSel.clear();renderChips();renderDrop();renderPerf();}));
-    shown.forEach(nm=>{const o=opt("",esc(nm),()=>{perf.campSel.add(nm);input.value="";renderChips();renderDrop();renderPerf();});o.title=nm;drop.appendChild(o);});
-    if(!shown.length)drop.appendChild(el("div","ms-empty","không có campaign khớp"));
-    else if(matches.length>shown.length)drop.appendChild(el("div","ms-more",`… còn ${matches.length-shown.length} campaign nữa, gõ để lọc`));
-    drop.classList.add("on");
+    if(!open){D.classList.remove("on");return;}
+    const q=I.value.trim().toLowerCase();
+    const matches=all.filter(nm=>!q||nm.toLowerCase().includes(q));
+    const unsel=matches.filter(nm=>!state.has(nm));
+    D.innerHTML="";
+    if(unsel.length)D.appendChild(opt("ms-all",`＋ Chọn tất cả ${unsel.length}${q?" kết quả":""}`,
+      ()=>{unsel.forEach(nm=>state.add(nm));sync();}));
+    if(state.size)D.appendChild(opt("ms-clear",`✕ Bỏ chọn tất cả (${state.size})`,()=>{state.clear();sync();}));
+    const shown=matches.slice(0,80);
+    shown.forEach(nm=>{const on=state.has(nm);
+      const o=opt("ms-row"+(on?" sel":""),`<span class="ck">${on?"✓":""}</span><span class="t">${esc(nm)}</span>`,
+        ()=>{state.has(nm)?state.delete(nm):state.add(nm);sync();});
+      o.title=nm;D.appendChild(o);});
+    if(!shown.length)D.appendChild(el("div","ms-empty","không có campaign khớp"));
+    else if(matches.length>shown.length)D.appendChild(el("div","ms-more",`… còn ${matches.length-shown.length} campaign nữa, gõ để lọc`));
+    D.classList.add("on");
   }
-  box.addEventListener("click",()=>{input.focus();});
-  input.addEventListener("focus",()=>{open=true;renderDrop();});
-  input.addEventListener("input",()=>{open=true;renderDrop();});
-  input.addEventListener("keydown",e=>{
-    if(e.key==="Backspace"&&!input.value&&perf.campSel.size){const last=[...perf.campSel].pop();perf.campSel.delete(last);renderChips();renderDrop();renderPerf();}
-    else if(e.key==="Escape"){open=false;drop.classList.remove("on");input.blur();}
-  });
-  document.addEventListener("click",e=>{if(!$("#pCampMS").contains(e.target)){open=false;drop.classList.remove("on");}});
-  renderChips();
-})();
+  function sync(){renderCount();renderDrop();onChange();}
+  B.addEventListener("click",()=>I.focus());
+  I.addEventListener("focus",()=>{open=true;renderDrop();});
+  I.addEventListener("input",()=>{open=true;renderDrop();});
+  I.addEventListener("keydown",e=>{if(e.key==="Escape"){open=false;D.classList.remove("on");I.blur();}});
+  document.addEventListener("click",e=>{if(!W.contains(e.target)){open=false;D.classList.remove("on");}});
+  renderCount();
+}
+makeCampSelect({wrap:"#pCampMS",box:"#pCampBox",input:"#pCampInput",drop:"#pCampDrop",count:"#pCampCount",
+  all:[...new Set(CAMPS.map(c=>c[0]))].sort((a,b)=>a.localeCompare(b)), state:perf.campSel, onChange:renderPerf});
 $("#pcStart").value=perf.cStart;$("#pcEnd").value=perf.cEnd;
 $("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.range==="custom")renderPerf();});
 $("#pcEnd").addEventListener("change",e=>{perf.cEnd=e.target.value;if(perf.range==="custom")renderPerf();});
