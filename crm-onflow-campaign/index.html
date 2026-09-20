@@ -913,6 +913,7 @@ function renderPerfTbl(){
     return {ci,name:nm,vert:CAMPS[ci][1],side:CAMPS[ci][2],
       title:CAMPS[ci][7]||"",body:CAMPS[ci][8]||"",
       sent:d?d.sent:null,reach:d?d.reach:null,opens:d?d.opens:null,
+      rreach:(d&&d.sent)?d.reach/d.sent:null,ctrR:(d&&d.reach)?d.opens/d.reach:null,
       dau:a.dau/nd,dva:a.dva/nd,dsave:a.dsave/nd,dlead:a.dlead/nd,leads:a.leads,
       crA:a.dau?a.dva/a.dau:0,crS:a.dau?a.dsave/a.dau:0,crL:a.dau?a.dlead/a.dau:0};});
   const key=perf.sort;
@@ -924,6 +925,7 @@ function renderPerfTbl(){
   const num=v=>v==null?'<span style="color:var(--muted)">—</span>':fmt(v);
   const cols=[["name","Campaign"],["side","Side"],["title","Title"],["body","Body"],
     ["sent","Sent"],["reach","Reach"],["opens","Direct open"],
+    ["rreach","% reach"],["ctrR","CTR reach"],
     ["dau","DAU"],["dva","DAU w/ adview"],["crA","CR adview"],
     ["dlead","DAU w/ lead"],["crL","CR lead"],["leads","Leads"],
     ["dsave","DAU w/ save-ad"],["crS","CR save"]];
@@ -936,6 +938,7 @@ function renderPerfTbl(){
       `<td><span class="pill-ch">${SIDE_LABEL[r.side]||r.side}</span></td>`+
       msgCell(r.title)+msgCell(r.body)+
       `<td class="num">${num(r.sent)}</td><td class="num">${num(r.reach)}</td><td class="num">${num(r.opens)}</td>`+
+      `<td class="num">${pct(r.rreach)}</td><td class="num">${pct(r.ctrR)}</td>`+
       `<td class="num">${fmt(r.dau)}</td><td class="num">${fmt(r.dva)}</td><td class="num">${pct(r.crA)}</td>`+
       `<td class="num">${fmt(r.dlead)}</td><td class="num">${pct(r.crL)}</td><td class="num">${fmt(r.leads)}</td>`+
       `<td class="num">${fmt(r.dsave)}</td><td class="num">${pct(r.crS)}</td>`;
