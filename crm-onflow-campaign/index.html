@@ -199,7 +199,15 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 .hb-val{font-family:"IBM Plex Mono",monospace;font-size:11.5px;text-align:right;color:var(--ink)}
 .hb-empty{font-size:11.5px;color:var(--muted);padding:8px 2px}
 .chip.kw[aria-pressed="true"]{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
-@media (max-width:700px){.bk-grid{grid-template-columns:1fr}}
+/* compact table filter bar (aligned label column) */
+.tf{border:1px solid var(--hair);border-radius:12px;padding:9px 14px 10px;margin:2px 0 12px;background:var(--surface-2)}
+.tf .ctl{display:flex;align-items:center;gap:6px 8px;flex-wrap:wrap}
+.tf .ctl+.ctl{margin-top:6px;padding-top:6px;border-top:1px solid var(--hair)}
+.tf .ctl-label{min-width:70px;flex:none}
+.tf .seg{padding:2px}.tf .seg button{padding:5px 9px}
+.tf .chip{padding:4px 10px}
+.tf .ms-box{min-width:220px;padding:3px 6px}
+@media (max-width:700px){.bk-grid{grid-template-columns:1fr}.tf .ctl-label{min-width:0;width:100%}}
 @media (max-width:900px){.kpis.k4{grid-template-columns:repeat(2,1fr)}.kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k6{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.wrap{padding:18px 14px 48px}h1{font-size:21px}.kpis.k3,.kpis.k4,.kpis.k6{grid-template-columns:1fr 1fr}
   .fn-row{grid-template-columns:1fr;gap:3px;padding:6px 0;border-bottom:1px solid var(--hair)}.fn-row.branch .fn-label{padding-left:0}.fn-row.branch .fn-label:before{display:none}.fn-conv{text-align:left}.fn-conv .fn-conv-lbl{display:inline;margin-left:6px}
@@ -370,7 +378,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p. <b>B&#7897; l&#7885;c ri&#234;ng cho b&#7843;ng n&#224;y</b> (KPIs &amp; bi&#7875;u &#273;&#7891; &#7903; tr&#234;n d&#249;ng b&#7897; l&#7885;c section).</div></div>
         <div class="range-note" id="pTblNote"></div>
       </div>
-      <div class="controls" style="box-shadow:none;border:1px solid var(--hair);flex-direction:column;align-items:stretch;gap:9px;margin:2px 0 12px">
+      <div class="tf">
         <div class="ctl"><span class="ctl-label">Range</span>
           <div class="seg" id="ptRangeSeg">
             <button data-r="3" type="button">3d</button><button data-r="5" type="button">5d</button>
@@ -384,7 +392,7 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
         <div class="ctl"><span class="ctl-label">Vertical</span><div class="chips" id="ptVertChips"></div></div>
         <div class="ctl"><span class="ctl-label">Side</span><div class="chips" id="ptSideChips"></div></div>
         <div class="ctl"><span class="ctl-label">Quick</span><div class="chips" id="ptKwChips"></div></div>
-        <div class="ctl"><span class="ctl-label">L&#7885;c campaign</span>
+        <div class="ctl"><span class="ctl-label">Campaign</span>
           <div class="ms" id="pCampMS">
             <div class="ms-box" id="pCampBox"><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"><span class="ms-count" id="pCampCount" hidden></span></div>
             <div class="ms-drop" id="pCampDrop"></div>
