@@ -184,6 +184,22 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 .mv-delta .mv-share{display:block;font-size:10px;color:var(--muted)}
 .mv-more{margin-top:10px;border:1px solid var(--hair-strong);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer;display:none;gap:6px;align-items:center}
 .mv-more:hover{border-color:var(--accent);color:var(--accent)}
+
+/* horizontal-bar breakdown (metric by group) */
+.bk-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+.bk-cell{border:1px solid var(--hair);border-radius:12px;padding:12px 14px 13px;background:var(--surface-2)}
+.bk-cell-title{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:9px;text-transform:uppercase;letter-spacing:.06em}
+.hb-wrap{display:flex;flex-direction:column;gap:6px}
+.hb-row{display:grid;grid-template-columns:88px 1fr 62px;gap:10px;align-items:center}
+.hb-label{font-size:11.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb-row.strong .hb-label{color:var(--ink);font-weight:700}
+.hb-track{position:relative;height:16px;background:var(--plane);border:1px solid var(--hair);border-radius:5px;overflow:hidden}
+.hb-bar{position:absolute;left:0;top:0;height:100%;border-radius:4px;opacity:.85;transition:width .35s ease}
+.hb-row.strong .hb-bar{opacity:1}
+.hb-val{font-family:"IBM Plex Mono",monospace;font-size:11.5px;text-align:right;color:var(--ink)}
+.hb-empty{font-size:11.5px;color:var(--muted);padding:8px 2px}
+.chip.kw[aria-pressed="true"]{background:var(--warn-soft);color:var(--warn);border-color:var(--warn)}
+@media (max-width:700px){.bk-grid{grid-template-columns:1fr}}
 @media (max-width:900px){.kpis.k4{grid-template-columns:repeat(2,1fr)}.kpis.k3{grid-template-columns:repeat(3,1fr)}.kpis.k6{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:560px){.wrap{padding:18px 14px 48px}h1{font-size:21px}.kpis.k3,.kpis.k4,.kpis.k6{grid-template-columns:1fr 1fr}
   .fn-row{grid-template-columns:1fr;gap:3px;padding:6px 0;border-bottom:1px solid var(--hair)}.fn-row.branch .fn-label{padding-left:0}.fn-row.branch .fn-label:before{display:none}.fn-conv{text-align:left}.fn-conv .fn-conv-lbl{display:inline;margin-left:6px}
@@ -234,8 +250,26 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
         </div>
       </div>
     </div>
+    <div class="controls">
+      <div class="ctl"><span class="ctl-label">Quick</span><div class="chips" id="dKwChips"></div></div>
+    </div>
 
     <section class="kpis k4" id="dKpis"></section>
+
+    <div class="panel" id="dBkChartPanel" style="margin-top:16px">
+      <div class="p-head">
+        <div><div class="p-title">Metric theo nh&#243;m</div><div class="p-desc">1 metric &mdash; chia theo <b>channel / platform / side / delivery type</b>, k&#232;m thanh <b>All</b> (t&#7893;ng). Theo c&#7917;a s&#7893; &amp; b&#7897; l&#7885;c hi&#7879;n t&#7841;i.</div></div>
+        <div class="seg" id="dBcMetSeg">
+          <button data-m="sent" type="button" aria-pressed="true">Sent</button>
+          <button data-m="reach" type="button">Reach</button>
+          <button data-m="impress" type="button">Impress</button>
+          <button data-m="opens" type="button">Direct open</button>
+          <button data-m="deliv_rate" type="button">Deliver rate</button>
+          <button data-m="open_rate" type="button">Open rate</button>
+        </div>
+      </div>
+      <div class="bk-grid" id="dBcGrid"></div>
+    </div>
 
     <div class="panel fn-panel" id="dFunnel" style="margin-top:16px"></div>
 
@@ -333,13 +367,28 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
     </div>
 
     <div class="panel" style="margin-top:16px">
-      <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p.</div></div>
+      <div class="p-head"><div><div class="p-title">Theo campaign</div><div class="p-desc">DAU/adview/lead/save-ad = <b>trung b&#236;nh/ng&#224;y</b> (&Sigma; distinct &divide; s&#7889; ng&#224;y); <b>Leads</b> = t&#7893;ng (c&#7897;ng d&#7891;n) &middot; CR = distinct-w-X / DAU. Click header &#273;&#7875; s&#7855;p x&#7871;p. <b>B&#7897; l&#7885;c ri&#234;ng cho b&#7843;ng n&#224;y</b> (KPIs &amp; bi&#7875;u &#273;&#7891; &#7903; tr&#234;n d&#249;ng b&#7897; l&#7885;c section).</div></div>
         <div class="range-note" id="pTblNote"></div>
       </div>
-      <div class="ctl" style="margin:2px 0 10px"><span class="ctl-label">L&#7885;c campaign</span>
-        <div class="ms" id="pCampMS">
-          <div class="ms-box" id="pCampBox"><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"><span class="ms-count" id="pCampCount" hidden></span></div>
-          <div class="ms-drop" id="pCampDrop"></div>
+      <div class="controls" style="box-shadow:none;border:1px solid var(--hair);flex-direction:column;align-items:stretch;gap:9px;margin:2px 0 12px">
+        <div class="ctl"><span class="ctl-label">Range</span>
+          <div class="seg" id="ptRangeSeg">
+            <button data-r="3" type="button">3d</button><button data-r="5" type="button">5d</button>
+            <button data-r="7" type="button" aria-pressed="true">7d</button><button data-r="14" type="button">14d</button>
+            <button data-r="30" type="button">30d</button><button data-r="90" type="button">90d</button><button data-r="custom" type="button">Custom</button>
+          </div>
+          <div class="custom-range" id="ptCustomRange"><input type="date" class="dt" id="ptcStart"><span style="color:var(--muted)">&rarr;</span><input type="date" class="dt" id="ptcEnd"></div>
+        </div>
+        <div class="ctl"><span class="ctl-label">Channel</span><div class="chips" id="ptChanChips"></div></div>
+        <div class="ctl"><span class="ctl-label">Platform</span><div class="chips" id="ptPlatChips"></div></div>
+        <div class="ctl"><span class="ctl-label">Vertical</span><div class="chips" id="ptVertChips"></div></div>
+        <div class="ctl"><span class="ctl-label">Side</span><div class="chips" id="ptSideChips"></div></div>
+        <div class="ctl"><span class="ctl-label">Quick</span><div class="chips" id="ptKwChips"></div></div>
+        <div class="ctl"><span class="ctl-label">L&#7885;c campaign</span>
+          <div class="ms" id="pCampMS">
+            <div class="ms-box" id="pCampBox"><input type="text" class="ms-input" id="pCampInput" placeholder="t&#236;m &amp; ch&#7885;n campaign&hellip;" autocomplete="off"><span class="ms-count" id="pCampCount" hidden></span></div>
+            <div class="ms-drop" id="pCampDrop"></div>
+          </div>
         </div>
       </div>
       <div class="tbl-wrap" style="margin-top:4px;box-shadow:none"><table id="pTbl"><thead></thead><tbody></tbody></table></div>
@@ -466,9 +515,42 @@ function drawChart(opts){
   holder.appendChild(svg);
 }
 
+/* ---------- quick keyword filter (matches campaign NAME, case-insensitive) ---------- */
+const KW_CHIPS=[
+  {v:"reward",label:"reward",subs:["reward"],title:'tên chứa "reward" (vd awo_rewards)'},
+  {v:"b2s",label:"b2s",subs:["b2s"],title:'Back To School — tên chứa "b2s"'},
+  {v:"thodia",label:"thodia",subs:["thodia","tho_dia"],title:'Thổ Địa — tên chứa "thodia"/"tho_dia"'}
+];
+const KW_MAP=Object.fromEntries(KW_CHIPS.map(k=>[k.v,k.subs]));
+// name passes if it matches ANY active keyword (OR). Empty set => no filter (caller skips).
+function kwMatch(name,set){const n=String(name||"").toLowerCase();
+  for(const v of set){const subs=KW_MAP[v]||[v];if(subs.some(s=>n.includes(s)))return true;}return false;}
+
+/* ---------- horizontal-bar chart (metric by category) ----------
+   rows:[{label,value,color,strong}]  opts:{pct} */
+function hBars(holder,rows,opts){
+  opts=opts||{};const isPct=!!opts.pct;
+  const vals=rows.map(r=>(r.value==null||!isFinite(r.value))?0:r.value);
+  const max=Math.max(...vals,isPct?0.0001:1);
+  holder.innerHTML="";
+  if(!rows.length){holder.appendChild(el("div","hb-empty","không có dữ liệu cho bộ lọc này"));return;}
+  const wrap=el("div","hb-wrap");
+  rows.forEach(r=>{
+    const v=(r.value==null||!isFinite(r.value))?null:r.value;
+    const w=v==null?0:Math.max(v>0?2:0,(v/max)*100);
+    const row=el("div","hb-row"+(r.strong?" strong":""));
+    row.innerHTML=`<div class="hb-label" title="${esc(r.label)}">${esc(r.label)}</div>`+
+      `<div class="hb-track"><div class="hb-bar" style="width:${w}%;background:${r.color||'var(--accent)'}"></div></div>`+
+      `<div class="hb-val">${v==null?'—':(isPct?pct(v):fmt(v))}</div>`;
+    wrap.appendChild(row);
+  });
+  holder.appendChild(wrap);
+}
+
 /* ================= SECTION 1 · DELIVERY ================= */
 const del={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],
-  ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),campSel:new Set(),metrics:new Set(["sent"]),bk:"channel",
+  ch:new Set(),pf:new Set(),tt:new Set(),sides:new Set(),kw:new Set(),campSel:new Set(),
+  metrics:new Set(["sent"]),bk:"channel",bcMet:"sent",
   mvA:DATES[Math.max(0,N-2)],mvB:DATES[N-1],mvMet:"sent",mvShowAll:false};
 
 // content_card & inbox report total_reach as IMPRESSIONS (session-based, can exceed sent),
@@ -483,6 +565,7 @@ function delRowOk(r){
   if(del.pf.size&&!del.pf.has(r[2]))return false;
   if(del.tt.size&&!del.tt.has(r[3]))return false;
   if(del.sides.size&&!del.sides.has(CAMP_SIDES[r[4]]))return false;
+  if(del.kw.size&&!kwMatch(DEL.camps[r[4]],del.kw))return false;
   if(del.campSel.size&&!del.campSel.has(DEL.camps[r[4]]))return false;
   return true;
 }
@@ -524,6 +607,48 @@ function renderDelKpis(){
   cards.forEach(cd=>{const k=el("div","kpi "+cd.cls);
     k.innerHTML=`<div class="k-name"><span>${cd.n}</span></div><div class="k-val">${cd.v}</div>${cd.rate?`<div class="k-rate">${cd.rate}</div>`:""}${cd.pill}<div class="k-foot">${cd.foot}</div>`;
     box.appendChild(k);});
+}
+// ---- metric-by-group horizontal bar charts (channel / platform / side / delivery type) ----
+// aggregate delivery components per category key over a window (respects current filters)
+function delBkAgg(keyFn,cs){
+  const m=new Map();
+  for(const r of DROWS){if(!cs.has(r[0])||!delRowOk(r))continue;const k=keyFn(r);
+    let a=m.get(k);if(!a){a={sent:0,sentReal:0,reach:0,impress:0,opens:0};m.set(k,a);}
+    a.sent+=r[5];a.opens+=r[7];
+    if(isImpress(r)){a.impress+=r[6];}else{a.reach+=r[6];a.sentReal+=r[5];}}
+  return m;
+}
+function delBkMetVal(a,met){
+  if(met==="sent")return a.sent;
+  if(met==="reach")return a.reach;
+  if(met==="impress")return a.impress;
+  if(met==="opens")return a.opens;
+  if(met==="deliv_rate")return a.sentReal?a.reach/a.sentReal:null;
+  const sh=a.reach+a.impress;return sh?a.opens/sh:null;   // open_rate
+}
+const DEL_BK_DIMS=[
+  {name:"Theo channel",keyFn:r=>r[1],labelOf:k=>DEL.channelLabels[k]},
+  {name:"Theo platform",keyFn:r=>r[2],labelOf:k=>DEL.platLabels[k]},
+  {name:"Theo side",keyFn:r=>CAMP_SIDES[r[4]],labelOf:k=>SIDE_LABEL[k]||k||"—",order:["demand","supply","other"]},
+  {name:"Theo delivery type",keyFn:r=>r[3],labelOf:k=>DEL.triggerLabels[k]}
+];
+function renderDelBkChart(){
+  const {cur}=winIdx(del),cs=new Set(cur);
+  const met=del.bcMet, mdef=DEL_MET[met], color=mdef.color, isPct=mdef.pct;
+  const allVal=delBkMetVal(delSum(cur),met);
+  const grid=$("#dBcGrid");grid.innerHTML="";
+  DEL_BK_DIMS.forEach(dim=>{
+    const agg=delBkAgg(dim.keyFn,cs);
+    let rows=[...agg.entries()].map(([k,a])=>({k,label:dim.labelOf(k),value:delBkMetVal(a,met),color}));
+    if(dim.order)rows.sort((x,y)=>dim.order.indexOf(x.k)-dim.order.indexOf(y.k));
+    else rows.sort((x,y)=>((y.value==null?-1:y.value)-(x.value==null?-1:x.value)));
+    rows.unshift({label:"All",value:allVal,color:"var(--ink-2)",strong:true});
+    const cell=el("div","bk-cell");
+    cell.appendChild(el("div","bk-cell-title",dim.name));
+    const holder=el("div");cell.appendChild(holder);
+    grid.appendChild(cell);
+    hBars(holder,rows,{pct:isPct});
+  });
 }
 // ---- on-app attribution for the funnel handoff ----
 // set of campaign_names that pass the current delivery filter within a window
@@ -731,7 +856,7 @@ $("#dMvMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");
 $("#dMvJump").addEventListener("click",()=>{delBiggestJump();del.mvShowAll=false;renderDelMovers();});
 $("#dMvToggle").addEventListener("click",()=>{del.mvShowAll=!del.mvShowAll;renderDelMovers();});
 
-function renderDeliv(){renderDelKpis();renderDelFunnel();renderDelTrend();renderDelBk();renderDelMovers();}
+function renderDeliv(){renderDelKpis();renderDelBkChart();renderDelFunnel();renderDelTrend();renderDelBk();renderDelMovers();}
 
 /* ---- delivery filter wiring ---- */
 function chipGroup(mount,labels,set,onChange){
@@ -765,6 +890,11 @@ const SIDE_CHIPS=[{v:"demand",label:"buyer",title:"campaign do team demand tạo
   {v:"supply",label:"seller",title:"campaign do team supply tạo — người bán"},
   {v:"other",label:"other",title:"product + khác"}];
 chipGroupV($("#dSideChips"),SIDE_CHIPS,del.sides,()=>renderDeliv());
+chipGroupV($("#dKwChips"),KW_CHIPS,del.kw,()=>renderDeliv());
+$("#dKwChips").querySelectorAll("button.chip:not(.all)").forEach(b=>b.classList.add("kw"));
+$("#dBcMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
+  del.bcMet=b.dataset.m;renderDelBkChart();});
 makeCampSelect({wrap:"#dCampMS",box:"#dCampBox",input:"#dCampInput",drop:"#dCampDrop",count:"#dCampCount",
   all:[...new Set(DEL.camps)].sort((a,b)=>a.localeCompare(b)), state:del.campSel, onChange:renderDeliv});
 $("#dRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
@@ -782,22 +912,33 @@ $("#dcStart").addEventListener("change",e=>{del.cStart=e.target.value;if(del.ran
 $("#dcEnd").addEventListener("change",e=>{del.cEnd=e.target.value;if(del.range==="custom")renderDeliv();});
 
 /* ================= SECTION 2 · PERFORMANCE ================= */
-const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),campSel:new Set(),metrics:new Set(["dau"]),sort:"dau",dir:-1};
+// Section-level filters drive the KPIs + Trend chart.
+const perf={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),metrics:new Set(["dau"]),sort:"dau",dir:-1};
+// Table-local filters (independent) drive ONLY the "Theo campaign" table.
+const ptbl={range:"7",cStart:DATES[Math.max(0,N-7)],cEnd:DATES[N-1],verts:new Set(),sides:new Set(),chs:new Set(),pfs:new Set(),kw:new Set(),campSel:new Set()};
 // campaign_name -> set of delivery channel / platform indices it was sent on (send-log footprint,
 // window-independent). Lets the Performance section filter by channel/platform via campaign_name.
 const NAME_CH=new Map(), NAME_PF=new Map();
 for(const r of DROWS){const nm=DEL.camps[r[4]];
   let sc=NAME_CH.get(nm);if(!sc){sc=new Set();NAME_CH.set(nm,sc);}sc.add(r[1]);
   let sp=NAME_PF.get(nm);if(!sp){sp=new Set();NAME_PF.set(nm,sp);}sp.add(r[2]);}
-function campChPfOk(c){
-  if(perf.chs.size){const s=NAME_CH.get(c[0]);if(!s||![...perf.chs].some(x=>s.has(x)))return false;}
-  if(perf.pfs.size){const s=NAME_PF.get(c[0]);if(!s||![...perf.pfs].some(x=>s.has(x)))return false;}
+function campChPfOk(c,chs,pfs){
+  if(chs.size){const s=NAME_CH.get(c[0]);if(!s||![...chs].some(x=>s.has(x)))return false;}
+  if(pfs.size){const s=NAME_PF.get(c[0]);if(!s||![...pfs].some(x=>s.has(x)))return false;}
   return true;}
+// KPIs + Trend use the section filters (no campaign multi-select — that lives on the table).
 function perfCampOk(ci){const c=CAMPS[ci];
   if(perf.verts.size&&!perf.verts.has(c[1]))return false;
   if(perf.sides.size&&!perf.sides.has(c[2]))return false;
-  if(!campChPfOk(c))return false;
-  if(perf.campSel.size&&!perf.campSel.has(c[0]))return false;
+  if(!campChPfOk(c,perf.chs,perf.pfs))return false;
+  return true;}
+// The table uses its own independent filter set.
+function ptblCampOk(ci){const c=CAMPS[ci];
+  if(ptbl.verts.size&&!ptbl.verts.has(c[1]))return false;
+  if(ptbl.sides.size&&!ptbl.sides.has(c[2]))return false;
+  if(!campChPfOk(c,ptbl.chs,ptbl.pfs))return false;
+  if(ptbl.kw.size&&!kwMatch(c[0],ptbl.kw))return false;
+  if(ptbl.campSel.size&&!ptbl.campSel.has(c[0]))return false;
   return true;}
 function perfPerDay(){
   const dau=new Array(N).fill(0),dva=new Array(N).fill(0),dsave=new Array(N).fill(0),dlead=new Array(N).fill(0);
@@ -853,8 +994,7 @@ function perfPerDayFor(vert){
   for(const r of PD){const c=CAMPS[r[1]];
     if(vert!==null&&c[1]!==vert)continue;
     if(perf.sides.size&&!perf.sides.has(c[2]))continue;
-    if(!campChPfOk(c))continue;
-    if(perf.campSel.size&&!perf.campSel.has(c[0]))continue;
+    if(!campChPfOk(c,perf.chs,perf.pfs))continue;
     dau[r[0]]+=r[2];dva[r[0]]+=r[3];dsave[r[0]]+=r[10];dlead[r[0]]+=r[8];}
   return{dau,dva,dsave,dlead};
 }
@@ -895,18 +1035,18 @@ function delByNameInWin(cs){
   return m;
 }
 function renderPerfTbl(){
-  const {cur}=winIdx(perf),cs=new Set(cur);
+  const {cur}=winIdx(ptbl),cs=new Set(cur);
   const nd=cur.length||1;          // distinct-user metrics shown as avg/day over the selected range
   const dmap=delByNameInWin(cs);   // campaign_name -> {sent,reach,opens}
   const agg=new Map();
-  for(const r of PD){if(!cs.has(r[0])||!perfCampOk(r[1]))continue;
+  for(const r of PD){if(!cs.has(r[0])||!ptblCampOk(r[1]))continue;
     const a=agg.get(r[1])||{dau:0,dva:0,dsave:0,dlead:0,leads:0};
     a.dau+=r[2];a.dva+=r[3];a.dsave+=r[10];a.dlead+=r[8];a.leads+=r[7];agg.set(r[1],a);}
   // Union trafficked campaigns (agg) with campaigns delivered in-window but with 0 CRM traffic,
   // so send-only campaigns still appear (on-app = 0, delivery numbers shown).
   const rowCis=new Set(agg.keys());
   for(let ci=0;ci<CAMPS.length;ci++){
-    if(rowCis.has(ci)||!perfCampOk(ci))continue;
+    if(rowCis.has(ci)||!ptblCampOk(ci))continue;
     if(dmap.has(CAMPS[ci][0]))rowCis.add(ci);}
   const ZERO={dau:0,dva:0,dsave:0,dlead:0,leads:0};
   let rows=[...rowCis].map(ci=>{const a=agg.get(ci)||ZERO;const nm=CAMPS[ci][0],d=dmap.get(nm);
@@ -944,20 +1084,39 @@ function renderPerfTbl(){
       `<td class="num">${fmt(r.dsave)}</td><td class="num">${pct(r.crS)}</td>`;
     tb.appendChild(tr);});
   if(!rows.length)tb.innerHTML=`<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted)">không có campaign cho bộ lọc này</td></tr>`;
-  $("#pTblNote").innerHTML=`<b>${total}</b> campaigns${total>200?" (top 200)":""}${perf.campSel.size?` · lọc <b>${perf.campSel.size}</b> campaign đã chọn`:""} &middot; ${daysLabel(cur)} &middot; Sent/Reach/Open khớp theo campaign_name (— = không có trong send-log)`;
+  const nFilt=(ptbl.chs.size?1:0)+(ptbl.pfs.size?1:0)+(ptbl.verts.size?1:0)+(ptbl.sides.size?1:0)+(ptbl.kw.size?1:0);
+  $("#pTblNote").innerHTML=`<b>${total}</b> campaigns${total>200?" (top 200)":""}${ptbl.campSel.size?` · lọc <b>${ptbl.campSel.size}</b> campaign đã chọn`:""}${nFilt?` · <b>${nFilt}</b> bộ lọc bảng`:""} &middot; ${daysLabel(cur)} &middot; Sent/Reach/Open khớp theo campaign_name (— = không có trong send-log)`;
   th.querySelectorAll("th").forEach(h=>h.addEventListener("click",()=>{const k=h.dataset.k;
     if(perf.sort===k)perf.dir*=-1;else{perf.sort=k;perf.dir=-1;}renderPerfTbl();}));
 }
-function renderPerf(){renderPerfKpis();renderPerfTrend();renderPerfTbl();}
+const VERT_ITEMS=[{v:"gds",label:"gds"},{v:"veh",label:"veh"},{v:"pty",label:"pty"},{v:"jobs",label:"jobs"},{v:"other",label:"other"}];
+// section-top filters drive KPIs + Trend; the table has its own filters (renderPerfTbl)
+function renderPerfTop(){renderPerfKpis();renderPerfTrend();}
+function renderPerf(){renderPerfTop();renderPerfTbl();}
 
-/* ---- perf filter wiring ---- */
+/* ---- perf SECTION filter wiring (KPIs + trend) ---- */
 $("#pRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
-  perf.range=b.dataset.r;$("#pCustomRange").classList.toggle("on",perf.range==="custom");renderPerf();});
-chipGroup($("#pChanChips"),DEL.channelLabels,perf.chs,()=>renderPerf());
-chipGroup($("#pPlatChips"),DEL.platLabels,perf.pfs,()=>renderPerf());
-chipGroupV($("#pVertChips"),[{v:"gds",label:"gds"},{v:"veh",label:"veh"},{v:"pty",label:"pty"},{v:"jobs",label:"jobs"},{v:"other",label:"other"}],perf.verts,()=>renderPerf());
-chipGroupV($("#pSideChips"),SIDE_CHIPS,perf.sides,()=>renderPerf());
+  perf.range=b.dataset.r;$("#pCustomRange").classList.toggle("on",perf.range==="custom");renderPerfTop();});
+chipGroup($("#pChanChips"),DEL.channelLabels,perf.chs,()=>renderPerfTop());
+chipGroup($("#pPlatChips"),DEL.platLabels,perf.pfs,()=>renderPerfTop());
+chipGroupV($("#pVertChips"),VERT_ITEMS,perf.verts,()=>renderPerfTop());
+chipGroupV($("#pSideChips"),SIDE_CHIPS,perf.sides,()=>renderPerfTop());
+
+/* ---- "Theo campaign" TABLE-local filter wiring (independent) ---- */
+$("#ptRangeSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");
+  ptbl.range=b.dataset.r;$("#ptCustomRange").classList.toggle("on",ptbl.range==="custom");renderPerfTbl();});
+chipGroup($("#ptChanChips"),DEL.channelLabels,ptbl.chs,()=>renderPerfTbl());
+chipGroup($("#ptPlatChips"),DEL.platLabels,ptbl.pfs,()=>renderPerfTbl());
+chipGroupV($("#ptVertChips"),VERT_ITEMS,ptbl.verts,()=>renderPerfTbl());
+chipGroupV($("#ptSideChips"),SIDE_CHIPS,ptbl.sides,()=>renderPerfTbl());
+chipGroupV($("#ptKwChips"),KW_CHIPS,ptbl.kw,()=>renderPerfTbl());
+$("#ptKwChips").querySelectorAll("button.chip:not(.all)").forEach(b=>b.classList.add("kw"));
+$("#ptcStart").value=ptbl.cStart;$("#ptcEnd").value=ptbl.cEnd;
+$("#ptcStart").addEventListener("change",e=>{ptbl.cStart=e.target.value;if(ptbl.range==="custom")renderPerfTbl();});
+$("#ptcEnd").addEventListener("change",e=>{ptbl.cEnd=e.target.value;if(ptbl.range==="custom")renderPerfTbl();});
+
 $("#pMetSeg").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   const m=b.dataset.m,on=b.getAttribute("aria-pressed")==="true";
   if(on){if(perf.metrics.size<=1)return;perf.metrics.delete(m);b.setAttribute("aria-pressed","false");}
@@ -1005,10 +1164,10 @@ function makeCampSelect({wrap,box,input,drop,count,all,state,onChange}){
   renderCount();
 }
 makeCampSelect({wrap:"#pCampMS",box:"#pCampBox",input:"#pCampInput",drop:"#pCampDrop",count:"#pCampCount",
-  all:[...new Set(CAMPS.map(c=>c[0]))].sort((a,b)=>a.localeCompare(b)), state:perf.campSel, onChange:renderPerf});
+  all:[...new Set(CAMPS.map(c=>c[0]))].sort((a,b)=>a.localeCompare(b)), state:ptbl.campSel, onChange:renderPerfTbl});
 $("#pcStart").value=perf.cStart;$("#pcEnd").value=perf.cEnd;
-$("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.range==="custom")renderPerf();});
-$("#pcEnd").addEventListener("change",e=>{perf.cEnd=e.target.value;if(perf.range==="custom")renderPerf();});
+$("#pcStart").addEventListener("change",e=>{perf.cStart=e.target.value;if(perf.range==="custom")renderPerfTop();});
+$("#pcEnd").addEventListener("change",e=>{perf.cEnd=e.target.value;if(perf.range==="custom")renderPerfTop();});
 
 /* ---------- footer + redraw ---------- */
 $("#foot").innerHTML=`<b>Delivery</b> = <code>chotot_onflow.onflow__campaign_daily</code> (Chợ Tốt only; Mudah loại qua <code>project_id</code>). Sent → Reach (delivered) → Direct open. zns không track reach → deliver rate zns = 0. Campaign &lt;1000 sent/28d gộp vào <code>(other, low-volume)</code>.<br><b>Performance</b> = traffic CRM session (<code>traffic_visit_detail</code> Growth ∩ lead/event detail), per campaign. DAU/DAU w-X là distinct/ngày → hiển thị <b>trung bình/ngày</b> trong khoảng lọc (Σ distinct ÷ số ngày); Leads là cộng dồn; CR = distinct-w-X / DAU trong cửa sổ.`;
