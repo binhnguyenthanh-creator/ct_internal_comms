@@ -133,6 +133,11 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
 .tt .r{display:flex;justify-content:space-between;gap:14px}
 .tt .r b{font-family:"IBM Plex Mono",monospace;color:var(--ink)}
 /* Forecast Q4 — actual-vs-KPI cards */
+.fc-nav{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 12px}
+.fc-nav-btn{border:1px solid var(--hair-strong);background:var(--surface);color:var(--ink-2);border-radius:8px;width:28px;height:28px;font:inherit;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
+.fc-nav-btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.fc-nav-btn:disabled{opacity:.35;cursor:default}
+.fc-nav-lbl{font-size:13px;font-weight:600;color:var(--ink);min-width:110px;text-align:center}
 .fc-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-top:4px}
 .fc-card{background:var(--surface-2);border:1px solid var(--hair);border-radius:12px;padding:13px 15px 12px;display:flex;flex-direction:column;gap:8px}
 .fc-card.tot{background:var(--surface);border-color:var(--hair-strong)}
@@ -387,6 +392,11 @@ svg .grid-line{stroke:var(--grid)}svg text{font-family:"IBM Plex Mono",monospace
       <div class="p-head">
         <div><div class="p-title">Forecast Q4 &mdash; Actual vs KPI</div><div class="p-desc" id="fcDesc"></div></div>
         <div class="seg" id="fcMetSeg"></div>
+      </div>
+      <div class="fc-nav">
+        <button type="button" id="fcPrev" class="fc-nav-btn" aria-label="Tháng trước">&larr;</button>
+        <span class="fc-nav-lbl" id="fcMonthLbl"></span>
+        <button type="button" id="fcNext" class="fc-nav-btn" aria-label="Tháng sau">&rarr;</button>
       </div>
       <div class="fc-cards" id="fcCards"></div>
     </div>
@@ -1032,23 +1042,36 @@ function fmtFcVal(v,fmt){
   return fmt==="pct"?pct(v,1):compact(v);
 }
 function daysInMonth(y,m){return new Date(Date.UTC(y,m,0)).getUTCDate();}
-// index into FC.months of the most recent month with ≥1 day already in the traffic payload
-function fcActualMonthIdx(){
-  for(let i=FC.months.length-1;i>=0;i--){
-    const mk=`${FC.year}-${String(FC_MONTH_NUM[FC.months[i]]).padStart(2,"0")}-`;
-    if(DATES.some(d=>d.startsWith(mk)))return i;
+const MONTH_ABBR=["","Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+// ---- month navigation: which calendar month the cards focus on ----
+// Browsable range = every month with traffic data in the payload UNION the forecast horizon
+// (FC.months, Sep-Dec) — so earlier months (before the forecast's Sep start) are reachable too,
+// they just show Actual only (no KPI target exists for them).
+let fcMonths=null,fcIdx=null;
+function fcBuildMonths(){
+  const set=new Set();
+  DATES.forEach(d=>{const[y,m]=d.split("-").map(Number);set.add(y*100+m);});
+  if(FC)FC.months.forEach(lbl=>set.add(FC.year*100+FC_MONTH_NUM[lbl]));
+  fcMonths=[...set].sort((a,b)=>a-b).map(k=>({year:Math.floor(k/100),monthNum:k%100}));
+  let def=fcMonths.length-1; // default = most recent month that actually has traffic data
+  for(let i=fcMonths.length-1;i>=0;i--){
+    const mk=`${fcMonths[i].year}-${String(fcMonths[i].monthNum).padStart(2,"0")}-`;
+    if(DATES.some(d=>d.startsWith(mk))){def=i;break;}
   }
-  return -1;
+  fcIdx=def;
 }
-// actual for ONE forecast category (vertical key, or buyer/rest/total) in ONE month, computed from
-// the same Performance payload already on the page, respecting Channel/Platform chips (perf.chs/pfs).
-function fcActualFor(monthIdx,catKey){
-  if(!FC||monthIdx<0)return null;
-  const monthLabel=FC.months[monthIdx];
-  const mk=`${FC.year}-${String(FC_MONTH_NUM[monthLabel]).padStart(2,"0")}-`;
+function fcTargetIdx(year,monthNum){
+  if(!FC)return-1;
+  return FC.months.findIndex(lbl=>FC.year===year&&FC_MONTH_NUM[lbl]===monthNum);
+}
+// actual for ONE forecast category (vertical key, or buyer/rest/total) in ONE calendar month,
+// computed from the same Performance payload already on the page, respecting Channel/Platform
+// chips (perf.chs/pfs). Returns null when the payload has no day in that month at all.
+function fcActualFor(year,monthNum,catKey){
+  const mk=`${year}-${String(monthNum).padStart(2,"0")}-`;
   const idxSet=new Set();DATES.forEach((d,i)=>{if(d.startsWith(mk))idxSet.add(i);});
   if(!idxSet.size)return null;
-  const totalDaysInMonth=daysInMonth(FC.year,FC_MONTH_NUM[monthLabel]);
+  const totalDaysInMonth=daysInMonth(year,monthNum);
   const daysAvail=idxSet.size,isPartial=daysAvail<totalDaysInMonth;
   let dau=0,dlead=0,leads=0;
   for(const r of PD){
@@ -1096,27 +1119,36 @@ const FC_CUMULATIVE=new Set(["leads"]);
 function renderForecastCards(){
   const met=FC.metrics.find(m=>m.key===fcMetric)||FC.metrics[0];
   const{cats,note}=fcCategories();
-  const mi=fcActualMonthIdx();
+  const focus=fcMonths[fcIdx],monthLbl=MONTH_ABBR[focus.monthNum];
+  const ti=fcTargetIdx(focus.year,focus.monthNum);
   const isMauMet=met.key==="mau"||met.key==="mwl";
   const isCum=FC_CUMULATIVE.has(met.key);
+  $("#fcMonthLbl").textContent=`Tháng ${focus.monthNum}/${focus.year}`;
+  $("#fcPrev").disabled=fcIdx<=0;
+  $("#fcNext").disabled=fcIdx>=fcMonths.length-1;
   const box=$("#fcCards");box.innerHTML="";
   cats.forEach(cat=>{
-    const target=(FC.rows[met.key]||{})[cat.key]||[];
-    const act=mi>=0?fcActualFor(mi,cat.key):null;
+    const target=ti>=0?((FC.rows[met.key]||{})[cat.key]||[]):[];
+    const act=fcActualFor(focus.year,focus.monthNum,cat.key);
     const av=act?act[met.key]:null;
-    const fullT=mi>=0?target[mi]:null;
+    const fullT=ti>=0?target[ti]:null;
     const paceT=fullT==null?null:(isCum&&act?fullT*(act.daysAvail/act.totalDaysInMonth):fullT);
     const ratio=(av!=null&&paceT)?av/paceT:null;
     const pcls=paceClass(ratio);
+    const actLbl=isCum?"Actual (MTD, cộng dồn)":"Actual (TB/ngày)";
     let statHtml;
-    if(isMauMet||av==null){
-      statHtml=`<div class="fc-stat-row"><div class="fc-stat"><span class="fc-stat-val">${fmtFcVal(fullT,met.fmt)}</span><span class="fc-stat-lbl">Target ${mi>=0?esc(FC.months[mi]):esc(FC.months[0])}</span></div></div>`+
+    if(av==null&&fullT==null){
+      statHtml=`<div class="fc-note">Không có dữ liệu thực tế lẫn KPI cho tháng này.</div>`;
+    }else if(isMauMet||av==null){
+      statHtml=`<div class="fc-stat-row"><div class="fc-stat"><span class="fc-stat-val">${fmtFcVal(fullT,met.fmt)}</span><span class="fc-stat-lbl">Target ${esc(monthLbl)}</span></div></div>`+
         `<div class="fc-note">${isMauMet?"Actual chưa tính được (thiếu dữ liệu distinct/tháng)":"Chưa có dữ liệu thực tế cho tháng này"}</div>`;
+    }else if(fullT==null){
+      statHtml=`<div class="fc-stat-row"><div class="fc-stat"><span class="fc-stat-val">${fmtFcVal(av,met.fmt)}</span><span class="fc-stat-lbl">${actLbl}</span></div></div>`+
+        `<div class="fc-note">Chưa có KPI cho tháng này — forecast chỉ có từ tháng Sep trở đi.</div>`;
     }else{
       const deltaCls=pcls==="good"?"up":pcls==="bad"?"down":"flat";
-      const paceLbl=isCum?"Target theo tiến độ":`Target ${esc(FC.months[mi])}`;
+      const paceLbl=isCum?"Target theo tiến độ":`Target ${esc(monthLbl)}`;
       const footFull=isCum?`<span class="fc-full">Cả tháng: ${fmtFcVal(fullT,met.fmt)}</span>`:"";
-      const actLbl=isCum?`Actual (MTD, cộng dồn)`:"Actual (TB/ngày)";
       statHtml=`<div class="fc-stat-row">`+
         `<div class="fc-stat"><span class="fc-stat-val">${fmtFcVal(av,met.fmt)}</span><span class="fc-stat-lbl">${actLbl}</span></div>`+
         `<div class="fc-stat sec"><span class="fc-stat-val">${fmtFcVal(paceT,met.fmt)}</span><span class="fc-stat-lbl">${paceLbl}</span></div>`+
@@ -1124,16 +1156,18 @@ function renderForecastCards(){
         `<div class="hb-track fc-pace"><div class="hb-bar ${pcls}" style="width:${Math.max(2,Math.min(100,(ratio||0)*100))}%"></div></div>`+
         `<div class="fc-card-foot"><span class="delta ${deltaCls}">${pct(ratio,0)} so với target</span>${footFull}</div>`;
     }
-    const validTargets=target.filter(v=>v!=null);
+    const fcTargets=FC.months.map((lbl,i)=>((FC.rows[met.key]||{})[cat.key]||[])[i]);
+    const validTargets=fcTargets.filter(v=>v!=null);
     const miniMax=validTargets.length?Math.max(...validTargets):1;
     const mini=FC.months.map((m,i)=>{
-      const v=target[i],h=v!=null?Math.max(4,Math.round(v/miniMax*100)):0;
-      return`<div class="fc-mbar${i===mi?" cur":""}" title="${esc(m)}: ${fmtFcVal(v,met.fmt)}">`+
+      const v=fcTargets[i],h=v!=null?Math.max(4,Math.round(v/miniMax*100)):0;
+      const isCur=FC.year===focus.year&&FC_MONTH_NUM[m]===focus.monthNum;
+      return`<div class="fc-mbar${isCur?" cur":""}" title="${esc(m)}: ${fmtFcVal(v,met.fmt)}">`+
         `<div class="fc-mbar-track"><div class="fc-mbar-fill" style="height:${h}%"></div></div>`+
         `<span class="fc-mbar-lbl">${esc(m)}</span></div>`;
     }).join("");
     const card=el("div","fc-card"+(cat.bold?" tot":""));
-    card.innerHTML=`<div class="fc-card-head"><span class="fc-card-name">${esc(cat.label)}</span>${act?`<span class="fc-card-badge">${esc(FC.months[mi])}${act.isPartial?` · MTD ${act.daysAvail}/${act.totalDaysInMonth}d`:""}</span>`:""}</div>`+
+    card.innerHTML=`<div class="fc-card-head"><span class="fc-card-name">${esc(cat.label)}</span><span class="fc-card-badge">${esc(monthLbl)}${act&&act.isPartial?` · MTD ${act.daysAvail}/${act.totalDaysInMonth}d`:""}</span></div>`+
       statHtml+
       `<div class="fc-mini">${mini}</div>`;
     box.appendChild(card);
@@ -1143,11 +1177,12 @@ function renderForecastCards(){
   const cumNote=isCum?" Total Lead là số cộng dồn nên target đã quy đổi theo số ngày đã qua trong tháng (pace) để so công bằng với số MTD.":" Đây là chỉ số trung bình/ngày nên actual (MTD) so thẳng với target tháng, không cần quy đổi theo số ngày.";
   const chpfNote=(perf.chs.size||perf.pfs.size)?" Actual đã lọc thêm theo Channel/Platform đang chọn ở trên; forecast (target) không có chiều này nên giữ nguyên.":"";
   const noteHtml=note?` <b>${esc(note)}</b>`:"";
-  $("#fcDesc").innerHTML=`<b>${esc(met.label)}</b> &middot; dự phóng th&#225;ng ${esc(FC.months[0])}&ndash;${esc(FC.months[FC.months.length-1])} 2026 (nguồn: ${esc(FC.source)}, cập nhật ${esc(FC.updated)}).${cumNote} Dãy 4 cột nhỏ = target theo quý, cột đậm = tháng hiện tại. Đi theo bộ lọc Vertical/Side/Channel/Platform ở trên.${noteHtml}${chpfNote}${mauNote}`;
+  $("#fcDesc").innerHTML=`<b>${esc(met.label)}</b> &middot; dùng &larr;/&rarr; để xem các tháng khác (KPI chỉ có Sep&ndash;Dec 2026, nguồn: ${esc(FC.source)}, cập nhật ${esc(FC.updated)}).${cumNote} Dãy 4 cột nhỏ = target theo quý, cột đậm = tháng đang xem. Đi theo bộ lọc Vertical/Side/Channel/Platform ở trên.${noteHtml}${chpfNote}${mauNote}`;
 }
 function renderForecast(){
   if(!FC)return;
   $("#fcPanel").hidden=false;
+  if(fcMonths===null)fcBuildMonths();
   const seg=$("#fcMetSeg");
   if(!seg.children.length){
     FC.metrics.forEach((m)=>{
@@ -1161,6 +1196,8 @@ function renderForecast(){
       });
       seg.appendChild(b);
     });
+    $("#fcPrev").addEventListener("click",()=>{if(fcIdx>0){fcIdx--;renderForecastCards();}});
+    $("#fcNext").addEventListener("click",()=>{if(fcIdx<fcMonths.length-1){fcIdx++;renderForecastCards();}});
   }
   renderForecastCards();
 }
