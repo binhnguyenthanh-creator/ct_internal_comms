@@ -52,18 +52,21 @@ iframe[hidden]{display:none}
   <div class="tabs" role="tablist" aria-label="Dashboards">
     <button role="tab" id="tab-pulse" aria-selected="true" data-key="pulse" data-src="internal-comms-pulse/"><span class="ico">📈</span>Internal Comms Pulse</button>
     <button role="tab" id="tab-campaign" aria-selected="false" data-key="campaign" data-src="crm-onflow-campaign/"><span class="ico">🎯</span>CRM OnFlow Campaign</button>
+    <button role="tab" id="tab-reward" aria-selected="false" data-key="reward" data-src="reward-crm-performance/"><span class="ico">🏆</span>Reward Performance</button>
   </div>
 </header>
 <main>
   <div class="loading" id="loading">Đang tải dashboard…</div>
   <iframe id="fr-pulse" title="Internal Comms Pulse" hidden></iframe>
   <iframe id="fr-campaign" title="CRM OnFlow Campaign" hidden></iframe>
+  <iframe id="fr-reward" title="Reward Performance" hidden></iframe>
 </main>
 <script>
 (function(){
   "use strict";
-  var KEYS={pulse:{tab:"tab-pulse",fr:"fr-pulse",src:"internal-comms-pulse/"},
-            campaign:{tab:"tab-campaign",fr:"fr-campaign",src:"crm-onflow-campaign/"}};
+  var KEYS={pulse:{tab:"tab-pulse",fr:"fr-pulse",src:"internal-comms-pulse/",title:"Internal Comms Pulse"},
+            campaign:{tab:"tab-campaign",fr:"fr-campaign",src:"crm-onflow-campaign/",title:"CRM OnFlow Campaign"},
+            reward:{tab:"tab-reward",fr:"fr-reward",src:"reward-crm-performance/",title:"Reward Performance"}};
   var loaded={};
   function pick(){
     var h=(location.hash||"").replace("#","");
@@ -88,7 +91,7 @@ iframe[hidden]{display:none}
     });
     try{localStorage.setItem("icp_tab",key);}catch(e){}
     if(location.hash.replace("#","")!==key)history.replaceState(null,"","#"+key);
-    document.title=(key==="campaign"?"CRM OnFlow Campaign":"Internal Comms Pulse")+" · Chợ Tốt";
+    document.title=KEYS[key].title+" · Chợ Tốt";
   }
   Object.keys(KEYS).forEach(function(k){
     document.getElementById(KEYS[k].tab).addEventListener("click",function(){activate(k);});
