@@ -259,6 +259,11 @@ td.sgl{min-width:230px}td.sgl b{font-weight:600}td.sgl .cond{display:block;font-
 </section>
 
 <section>
+  <div class="sec-head"><h2>Hiệu quả theo voucher</h2><p>Funnel trên trang Reward cho <b>toàn bộ traffic</b> (không chỉ user đến từ CRM), 01/08–29/09/2026. Hai cột cuối đối chiếu phần CRM đóng góp được bao nhiêu trong đó</p></div>
+  <div class="tbl"><table id="vtabx"></table></div>
+</section>
+
+<section>
   <div class="sec-head"><h2>Chi tiết từng campaign</h2><p>Lọc theo segment lớn / nhỏ, campaign type và loại voucher được promote trong message. Bấm vào một dòng để xem chi tiết</p></div>
   <div class="filters">
     <input id="q" type="search" placeholder="Tìm tên campaign, message…" aria-label="Tìm campaign">
@@ -284,7 +289,8 @@ td.sgl{min-width:230px}td.sgl b{font-weight:600}td.sgl .cond{display:block;font-
   <p><b>Map segment.</b> Segment lớn lấy từ cách đặt tên campaign; segment nhỏ suy ra từ chuỗi segment UCDP (điều kiện thực chạy) rồi đối chiếu ngược lên mã plan ở tab Segment plan T10. Chỗ nào điều kiện thực chạy không trùng mốc trong plan thì cột Plan ghi nhiều mã và có dấu ⚠ kèm giải thích — xem chi tiết trước khi dùng số để so với plan.</p>
   <p><b>Campaign type.</b> Suy ra từ tần suất: <i>Always-on</i> = chạy định kỳ (daily, 1 lần/tuần, 2 lần/tuần), <i>Trigger</i> = bắn theo hành vi, <i>Adhoc / 1 lần</i> = không khai báo tần suất trong file plan.</p>
   <p><b>Loại voucher.</b> Nhận từ thương hiệu được nhắc trong title và body của message (không phải từ kho voucher gắn vào reward_id), nhóm thành F&amp;B, dịch vụ &amp; sức khoẻ, di chuyển &amp; giao vận, mua sắm &amp; điện máy. Campaign chỉ nói chung chung "kho quà" sẽ nằm ở nhóm "Không nêu voucher cụ thể".</p>
-  <p><b>Nguồn funnel.</b> Sent, reach, click và các action redeem lấy từ Google Sheet "Brand Master Dashboard_Source&amp;Traffic_Table", giai đoạn 01/08–29/09/2026. Chỉ số "Use voucher" chưa được track đầy đủ.</p>
+  <p><b>Nguồn funnel.</b> Sent, reach, click và các action redeem theo campaign lấy từ Google Sheet "Brand Master Dashboard_Source&amp;Traffic_Table", giai đoạn 01/08–29/09/2026.</p>
+  <p><b>Bảng Hiệu quả theo voucher.</b> Lấy trực tiếp từ <span class="num">chotot-dwh.chotot_data.traffic_event_detail</span>, <span class="num">eventCategory = 'chotot_rewards'</span>, <span class="num">eventAction = 'click'</span>, cùng khoảng 01/08–29/09/2026. Bốn bước đọc từ tiền tố của <span class="num">eventLabel</span>: <span class="num">view_new_reward</span> → <span class="num">redeem</span> (click redeem) → <span class="num">confirm_to_redeem</span> (confirm) → <span class="num">use_voucher</span> (đã dùng). Tên thương hiệu nằm ở slot thứ 3 của eventLabel, đã gộp hoa/thường. <b>Đây là toàn bộ traffic trang Reward, không phải chỉ user đến từ CRM</b> — slot campaign trong eventLabel chỉ nhận giá trị <span class="num">internal</span> / <span class="num">external</span> và cột <span class="num">campaign</span> (UTM) luôn rỗng trên nhóm event này, nên không tách được funnel voucher theo từng campaign. Cột "Click redeem từ CRM" là tổng click redeem theo voucher của các campaign trong phạm vi đang chọn, để ước lượng phần CRM đóng góp.</p>
 </div>
 </div>
 <div id="tab-plan" hidden>
@@ -429,10 +435,26 @@ const esc = s => String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 const BR=[['KFC',/kfc/i],['Breadtalk',/brea[dk]\s?talk/i],["Three O'Clock",/three\s?o'?\s?clock/i],['Ôlong Châu',/[oô]\s?l[oô]ng\s?châu/i],['Rau Má Mix',/rau\s?má/i],['bTaskee',/btaskee/i],['Chạm Đà Lạt',/chạm đà lạt/i],['The New Gym',/new\s?gym/i],['Vé Xe Rẻ',/vé xe|vexere/i],['Điện Lạnh Chợ Lớn',/(điện lạnh|điện máy) chợ lớn/i],['Viva Star',/viva\s?(star|coffee)/i],['Đồng Tốt',/đồng tốt khuyến mãi/i],['SPX',/\bspx\b/i]];
 const VCAT={'KFC':'F&B','Breadtalk':'F&B',"Three O'Clock":'F&B','Ôlong Châu':'F&B','Rau Má Mix':'F&B','Chạm Đà Lạt':'F&B','Viva Star':'F&B','bTaskee':'Dịch vụ & sức khoẻ','The New Gym':'Dịch vụ & sức khoẻ','Vé Xe Rẻ':'Di chuyển & giao vận','SPX':'Di chuyển & giao vận','Điện Lạnh Chợ Lớn':'Mua sắm & điện máy','Đồng Tốt':'Khác (nội bộ Chợ Tốt)'};
 const canon=s=>{const m=BR.find(([,re])=>re.test(s));return m?m[0]:s};
-// === Hook: số click / redeem voucher bổ sung sau =========================
-// Dán theo dạng  VX["<tên campaign>"] = { "KFC": {click: 1234, redeem: 56}, ... }
-// Tên voucher dùng đúng nhãn ở cột Voucher (KFC, Breadtalk, Rau Má Mix…).
-const VX = {};
+// === Funnel trang Reward theo voucher ====================================
+// Nguồn: chotot-dwh.chotot_data.traffic_event_detail, eventCategory='chotot_rewards',
+// eventAction='click', eventLabel dạng "<action>_<reward_id> | internal | <brand> | n".
+// view = view_new_reward, cr = redeem, cf = confirm_to_redeem, use = use_voucher.
+// Toàn bộ traffic trang Reward 01/08–29/09/2026, KHÔNG tách được theo campaign
+// (slot campaign trong eventLabel chỉ có giá trị internal / external).
+const RP = {
+  'Rau Má Mix':        {view:6298, cr:3193, cf:695, use:206},
+  'Vé Xe Rẻ':          {view:1953, cr:2729, cf:434, use:178},
+  'KFC':               {view:4384, cr:2687, cf:692, use:553},
+  'Breadtalk':         {view:2071, cr:1672, cf:423, use:198},
+  'Ôlong Châu':        {view:2456, cr: 842, cf:288, use:286},
+  "Three O'Clock":     {view: 849, cr: 724, cf:115, use: 60},
+  'Điện Lạnh Chợ Lớn': {view:1225, cr: 456, cf: 23, use: 14},
+  'The New Gym':       {view:1160, cr: 313, cf: 48, use: 34},
+  'bTaskee':           {view: 762, cr: 217, cf: 23, use: 25},
+  'Chạm Đà Lạt':       {view: 402, cr: 172, cf: 18, use: 14},
+  'Viva Star':         {view: 552, cr: 117, cf: 44, use: 36},
+  'SPX':               {view:  65, cr:  78, cf:  9, use:  1}
+};
 // ========================================================================
 const brandsOf=r=>BR.filter(([,re])=>re.test(r.title+' '+r.body)).map(([n])=>n);
 const rows = D.rows.map(r=>({...r,
@@ -459,6 +481,22 @@ function renderKpis(){
 }
 document.getElementById('insights').innerHTML = INS.map(i=>`<article class="ins"><div class="top"><h3>${i.t}</h3><span class="sev ${i.s}">${i.sl}</span></div><p>${i.p}</p><div class="ev">${i.e}</div></article>`).join('');
 document.getElementById('actions').innerHTML = ACTS.map(a=>`<div class="act"><span class="k"></span><div><b>${a.t}</b><p>${a.p}</p></div><span class="chip">${a.tag}</span></div>`).join('');
+// voucher table: funnel toàn trang Reward + phần CRM đóng góp
+function renderVou(){
+  const crm={};
+  base().forEach(r=>(r.vouchers||[]).forEach(x=>{const b=canon(x.v);(crm[b]??={cr:0,cf:0}).cr+=x.cr||0;crm[b].cf+=x.cf||0}));
+  const L=Object.entries(RP).map(([b,d])=>({b,...d,ccr:crm[b]?.cr||0,ccf:crm[b]?.cf||0})).sort((a,b)=>b.cr-a.cr);
+  const T=L.reduce((o,r)=>({view:o.view+r.view,cr:o.cr+r.cr,cf:o.cf+r.cf,use:o.use+r.use,ccr:o.ccr+r.ccr,ccf:o.ccf+r.ccf}),{view:0,cr:0,cf:0,use:0,ccr:0,ccf:0});
+  const row=r=>`<tr><td>${esc(r.b)}<span class="muted" style="margin-left:6px">${esc(VCAT[r.b]||'')}</span></td>`+
+    `<td class="n">${fmt(r.view)}</td><td class="n">${fmt(r.cr)}</td><td class="n">${fmt(r.cf)}</td><td class="n">${fmt(r.use)}</td>`+
+    `<td class="n">${pct(r.cf,r.cr)}</td><td class="n">${pct(r.use,r.cf)}</td>`+
+    `<td class="n">${fmt(r.ccr)}</td><td class="n">${pct(r.ccr,r.cr)}</td></tr>`;
+  document.getElementById('vtabx').innerHTML =
+    `<thead><tr><th>Voucher</th><th class="n">Xem voucher</th><th class="n">Click redeem</th><th class="n">Confirm redeem</th><th class="n">Đã dùng</th><th class="n">Confirm / click</th><th class="n">Đã dùng / confirm</th><th class="n">Click redeem từ CRM</th><th class="n">CRM / tổng</th></tr></thead><tbody>`+
+    L.map(row).join('')+
+    `<tr style="font-weight:600;border-top:2px solid var(--line)"><td>Tổng</td><td class="n">${fmt(T.view)}</td><td class="n">${fmt(T.cr)}</td><td class="n">${fmt(T.cf)}</td><td class="n">${fmt(T.use)}</td><td class="n">${pct(T.cf,T.cr)}</td><td class="n">${pct(T.use,T.cf)}</td><td class="n">${fmt(T.ccr)}</td><td class="n">${pct(T.ccr,T.cr)}</td></tr>`+
+    '</tbody>';
+}
 // segment table (segment lớn -> segment nhỏ)
 let sch='';
 try{const v=localStorage.getItem('rwsch');if(v!=null)sch=v}catch(e){}
@@ -552,9 +590,8 @@ function spark(w){
 function detail(r){
   const B={}; r.vpl.forEach(b=>B[b]={b,cr:null,cf:null,pr:1});
   r.vouchers.forEach(x=>{const b=canon(x.v);(B[b]??={b,pr:0}).cr=(B[b].cr||0)+x.cr;B[b].cf=(B[b].cf||0)+x.cf});
-  const X=VX[r.name]||{}; Object.keys(X).forEach(b=>{B[b]??={b,cr:null,cf:null,pr:0}});
   const VL=Object.values(B).sort((a,b)=>(b.cr||0)-(a.cr||0)||a.b.localeCompare(b.b));
-  const v=VL.length?`<table class="vtab"><tr><td class="muted">Voucher</td><td class="n muted">Click redeem</td><td class="n muted">Confirm</td><td class="n muted">Click voucher</td><td class="n muted">Redeem</td></tr>${VL.map(x=>{const e=X[x.b]||{};return `<tr><td>${esc(x.b)}${x.pr?'':' <span class="muted">(ngoài message)</span>'}</td><td class="n num">${fmt(x.cr)}</td><td class="n num ${x.cr>=20&&x.cf===0?'lo':''}">${fmt(x.cf)}</td><td class="n num">${fmt(e.click)}</td><td class="n num">${fmt(e.redeem)}</td></tr>`}).join('')}${Object.keys(X).length?'':'<tr><td colspan="5" class="muted" style="padding-top:8px">Cột Click voucher và Redeem chờ data bổ sung (biến <span class="num">VX</span> trong file).</td></tr>'}</table>`:'<span class="muted">Message không nêu voucher cụ thể và chưa có lượt redeem nào</span>';
+  const v=VL.length?`<table class="vtab"><tr><td class="muted">Voucher</td><td class="n muted">Click redeem</td><td class="n muted">Confirm</td><td class="n muted">Confirm / click</td><td class="n muted">Đã dùng / confirm (toàn trang)</td></tr>${VL.map(x=>{const g=RP[x.b];return `<tr><td>${esc(x.b)}${x.pr?'':' <span class="muted">(ngoài message)</span>'}</td><td class="n num">${fmt(x.cr)}</td><td class="n num ${x.cr>=20&&x.cf===0?'lo':''}">${fmt(x.cf)}</td><td class="n num">${pct(x.cf,x.cr)}</td><td class="n num">${g?pct(g.use,g.cf):'–'}</td></tr>`}).join('')}<tr><td colspan="5" class="muted" style="padding-top:8px">Cột cuối là tỉ lệ dùng voucher của cả trang Reward, không tách riêng được cho campaign này.</td></tr></table>`:'<span class="muted">Message không nêu voucher cụ thể và chưa có lượt redeem nào</span>';
   const wk=r.weeks&&r.weeks.some(w=>w.clk!=null)?spark(r.weeks):'<span class="muted">Không có trong file plan theo tuần</span>';
   return `<div class="dwrap"><div class="dgrid">
    <div style="display:flex;flex-direction:column;gap:10px;min-width:0"><div class="eyebrow">Message đang chạy</div>
@@ -600,13 +637,13 @@ fvou.addEventListener('change',e=>{st.vou=e.target.value;render()});
 document.getElementById('fsc').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;scope=b.dataset.v?1:0;
   document.querySelectorAll('#fsc button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.v?1:0)===scope));
   try{localStorage.setItem('rwscope',String(scope))}catch(e){}
-  renderKpis();renderSeg();render();});
+  renderKpis();renderSeg();renderVou();render();});
 document.querySelectorAll('#fsc button').forEach(x=>x.setAttribute('aria-pressed',(x.dataset.v?1:0)===scope));
 [['fch','ch'],['fst','s']].forEach(([id,k])=>document.getElementById(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;st[k]=b.dataset.v;setSeg(id,st[k]);render()}));
 
 function showTab(k){document.querySelectorAll('.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===k));document.getElementById('tab-perf').hidden=k!=='perf';document.getElementById('tab-plan').hidden=k!=='plan';document.getElementById('tab-msg').hidden=k!=='msg';try{localStorage.setItem('rwtab',k)}catch(e){}}
 document.querySelector('.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.t)});
-renderKpis();renderSeg();
+renderKpis();renderSeg();renderVou();
 {let k=location.hash==='#msg'?'msg':location.hash==='#plan'?'plan':location.hash==='#perf'?'perf':null;if(!k){try{k=localStorage.getItem('rwtab')}catch(e){}}if(k==='plan'||k==='msg')showTab(k);}
 render();
 </script>
